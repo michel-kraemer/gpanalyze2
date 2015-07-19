@@ -1,0 +1,27 @@
+<md-dialog aria-label="Import track">
+  <form>
+    <md-toolbar>
+      <div class="md-toolbar-tools">
+        <h2>Import track</h2>
+        <span flex></span>
+        <md-button class="md-icon-button" ng-click="cancel()">
+          <md-icon aria-label="Close dialog">close</md-icon>
+        </md-button>
+      </div>
+    </md-toolbar>
+    <md-dialog-content>
+      <div>
+        <p>
+          <span ng-hide="files[0]">No file selected yet</span>
+          {{ files[0].name }}
+          <md-button class="md-raised track-import-button" ng-disabled="importing"><label for="track_file_select">Select track</label></md-button>
+          <input type="file" id="track_file_select" ngf-select ngf-change="onSelect($files)" ng-disabled="importing">
+        </p>
+      </div>
+    </md-dialog-content>
+    <div class="md-actions" layout="row">
+      <md-button ng-click="cancel()" ng-disabled="importing">Cancel</md-button>
+      <md-button ng-click="ok()" class="md-primary" ng-disabled="importing || !files[0]">Start import</md-button>
+    </div>
+  </form>
+</md-dialog>

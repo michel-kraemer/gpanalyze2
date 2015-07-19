@@ -1,0 +1,17 @@
+.md-button.md-fab md-icon {
+  color: #666;
+}
+
+.track-import-button {
+  padding: 0;
+}
+
+.track-import-button label {
+  display: inline-block;
+  padding: 0 6px;
+  cursor: pointer;
+}
+
+#track_file_select {
+  display: none;
+}

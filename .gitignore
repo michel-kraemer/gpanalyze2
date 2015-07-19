@@ -1,0 +1,8 @@
+.externalToolBuilders/
+.gradle/
+.settings/
+.vertx/
+bin/
+build/
+.classpath
+.project

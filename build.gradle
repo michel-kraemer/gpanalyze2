@@ -1,0 +1,30 @@
+apply plugin: 'java'
+apply plugin: 'application'
+apply plugin: 'eclipse'
+
+mainClassName = 'de.undercouch.gpanalyze2.Main'
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+    maven {
+        url 'https://oss.sonatype.org/content/repositories/snapshots'
+    }
+}
+
+dependencies {
+    compile "io.vertx:vertx-core:3.0.0"
+    compile "io.vertx:vertx-web:3.0.0"
+
+    compile "org.webjars:angularjs:1.3.15"
+    compile "org.webjars:angular-material:0.10.0"
+    compile "org.webjars:jquery:2.1.4"
+    compile "org.webjars:leaflet:0.7.3"
+    compile "org.webjars.bower:ng-file-upload:5.0.9"
+    compile "org.webjars.bower:sockjs-client:0.3.4"
+    compile "org.webjars.npm:vertx3-eventbus-client:3.0.0-1"
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.5'
+}
