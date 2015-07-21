@@ -1,9 +1,10 @@
-angular.module("importDialog", ["ngMaterial", "ngFileUpload"])
+angular.module("importDialog", ["ngMaterial", "ngFileUpload", "eventbus"])
 
 .factory("ImportDialogCtrl", function() {
-  return function($scope, $mdDialog) {
+  return function($scope, $mdDialog, $timeout, EventBus) {
     $scope.files = [];
     $scope.importing = false;
+    $scope.progress = 0;
     
     $scope.cancel = function() {
       $mdDialog.cancel();
@@ -11,11 +12,23 @@ angular.module("importDialog", ["ngMaterial", "ngFileUpload"])
     
     $scope.ok = function() {
       $scope.importing = true;
+      $scope.progress = 0;
       var fr = new FileReader();
       fr.onload = function(e) {
         var xmlstr = e.target.result;
         loadRawTracksFromFile(xmlstr, function(track) {
-          $mdDialog.hide(track);
+          // TODO support more than one track per file
+          importTrack(track[0], function(err) {
+            if (err) {
+              $mdDialog.show($mdDialog.alert()
+                  .parent(angular.element(document.body))
+                  .title("Error")
+                  .content("Could not create track. " + err.message)
+                  .ok("OK"));
+            } else {
+              $mdDialog.hide();
+            }
+          });
         });
       };
       fr.readAsText($scope.files[0]);
@@ -85,5 +98,52 @@ angular.module("importDialog", ["ngMaterial", "ngFileUpload"])
       
       return result;
     }
+    
+    var importTrack = function(track, callback) {
+      // create new track on server
+      EventBus.send("tracks", {
+        "action": "addTrack"
+      }, function(reply) {
+        // add points to new track (max. 20 points per message to avoid
+        // exceeding maximum WebSocket frame size)
+        var trackId = reply.trackId;
+        var doAddPoints = function(i, n) {
+          if (i >= track.points.length) {
+            callback(null);
+            return;
+          }
+          $timeout(function() {
+            $scope.progress = Math.round(i * 100 / track.points.length);
+          }, 0);
+          addPointsToTrack(track, i, n, trackId, function(err) {
+            if (err) {
+              EventBus.send("tracks", {
+                "action": "deleteTrack",
+                "trackId": trackId
+              });
+              callback(err);
+              return;
+            }
+            doAddPoints(i + n, n);
+          });
+        };
+        doAddPoints(0, 20);
+      }, function(err) {
+        callback(err);
+      });
+    };
+    
+    var addPointsToTrack = function(track, i, n, trackId, callback) {
+      var ps = track.points.slice(i, i + n);
+      EventBus.send("tracks", {
+        "action": "addPoints",
+        "trackId": trackId,
+        "points": ps
+      }, function(reply) {
+        callback(null);
+      }, function(err) {
+        callback(err);
+      })
+    };
   };
 });
