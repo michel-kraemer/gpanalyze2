@@ -104,7 +104,7 @@ angular.module("importDialog", ["ngMaterial", "ngFileUpload", "eventbus"])
       EventBus.send("tracks", {
         "action": "addTrack"
       }, function(reply) {
-        // add points to new track (max. 20 points per message to avoid
+        // add points to new track (max. n points per message to avoid
         // exceeding maximum WebSocket frame size)
         var trackId = reply.trackId;
         var doAddPoints = function(i, n) {
@@ -124,10 +124,11 @@ angular.module("importDialog", ["ngMaterial", "ngFileUpload", "eventbus"])
               callback(err);
               return;
             }
-            doAddPoints(i + n, n);
+            i += n;
+            doAddPoints(i, findBestWebsocketFrameSize(track, i, n));
           });
         };
-        doAddPoints(0, 20);
+        doAddPoints(0, findBestWebsocketFrameSize(track, 0, track.points.length));
       }, function(err) {
         callback(err);
       });
@@ -144,6 +145,39 @@ angular.module("importDialog", ["ngMaterial", "ngFileUpload", "eventbus"])
       }, function(err) {
         callback(err);
       })
+    };
+    
+    var findBestWebsocketFrameSize = function(track, i, lastn) {
+      var MAX_SIZE = 1024 * 63; // 63KB, leave some room for overhead
+      var maxn = track.points.length - i;
+      var curn = lastn;
+      var curs = curn >> 1;
+      var mindist = Number.MAX_VALUE;
+      var minn = maxn;
+      
+      if (curn < 2) {
+        return curn;
+      }
+      
+      while (true) {
+        var ps = track.points.slice(i, i + curn);
+        var json = JSON.stringify(ps);
+        json = JSON.stringify({"json": json}); // escape JSON
+        var dist = MAX_SIZE - json.length;
+        if (dist >= 0 && mindist > Math.abs(dist)) {
+          mindist = Math.abs(dist);
+          minn = curn;
+        }
+        if (dist < 0) {
+          curn = curn - curs;
+        } else if (dist > 0) {
+          curn = curn + curs;
+        }
+        curs = curs >> 1;
+        if (curs == 0) {
+          return minn;
+        }
+      }
     };
   };
 });
