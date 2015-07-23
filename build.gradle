@@ -15,6 +15,7 @@ repositories {
 dependencies {
     compile "io.vertx:vertx-core:3.0.0"
     compile "io.vertx:vertx-mongo-client:3.0.0"
+    compile "io.vertx:vertx-rx-java:3.0.0"
     compile "io.vertx:vertx-web:3.0.0"
 
     compile "org.webjars:angularjs:1.3.15"
@@ -23,7 +24,12 @@ dependencies {
     compile "org.webjars:leaflet:0.7.3"
     compile "org.webjars.bower:ng-file-upload:5.0.9"
     compile "org.webjars.bower:sockjs-client:0.3.4"
+    compile "org.webjars.bower:xdate:0.8.1"
     compile "org.webjars.npm:vertx3-eventbus-client:3.0.0-1"
+    
+    compile "com.google.maps:google-maps-services:0.1.7"
+    compile "org.apache.commons:commons-lang3:3.4"
+    compile "commons-io:commons-io:2.4"
 }
 
 task wrapper(type: Wrapper) {
