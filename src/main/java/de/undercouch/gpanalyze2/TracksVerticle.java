@@ -26,6 +26,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import io.vertx.ext.mongo.FindOptions;
 import io.vertx.ext.mongo.MongoClient;
 import io.vertx.rx.java.ObservableFuture;
 import io.vertx.rx.java.RxHelper;
@@ -36,7 +37,6 @@ public class TracksVerticle extends AbstractVerticle {
     private static final String POINTS = "points";
     private static final String TRACK_ID = "trackId";
     private static final String MAX_POINTS = "maxPoints";
-    private static final String PAGE = "page";
     private static final String START_TIME = "startTime";
     private static final String END_TIME = "endTime";
     private static final String TIME_ZONE_ID = "timeZoneId";
@@ -87,6 +87,10 @@ public class TracksVerticle extends AbstractVerticle {
             
             case "deleteTrack":
                 onDeleteTrack(msg);
+                break;
+            
+            case "findTracks":
+                onFindTracks(msg);
                 break;
             
             default:
@@ -339,5 +343,106 @@ public class TracksVerticle extends AbstractVerticle {
                 }
             });
         }
+    }
+    
+    private void onFindTracks(Message<JsonObject> msg) {
+        Integer maxPoints = msg.body().getInteger(MAX_POINTS, 60 * 60 * 24);
+        Long startTime = msg.body().getLong(START_TIME, 0L);
+        Long endTime = msg.body().getLong(END_TIME, System.currentTimeMillis());
+        
+        // find all tracks in the given search window
+        JsonObject query = new JsonObject()
+                .put("$or", new JsonArray()
+                        .add(new JsonObject()
+                            .put(START_TIME, new JsonObject()
+                                    .put("$gte", startTime))
+                            .put(START_TIME, new JsonObject()
+                                    .put("$lte", endTime)))
+                        .add(new JsonObject()
+                            .put(END_TIME, new JsonObject()
+                                    .put("$gte", startTime))
+                            .put(END_TIME, new JsonObject()
+                                    .put("$lte", endTime))));
+        // retrieve everything except 'points'
+        JsonObject fields = new JsonObject().put(POINTS, 0);
+        FindOptions findOptions = new FindOptions().setFields(fields);
+        client.findWithOptions(TRACKS_COLLECTION, query, findOptions, ar -> {
+            if (ar.succeeded()) {
+                List<JsonObject> tracks = ar.result();
+                if (tracks.size() == 0) {
+                    msg.reply(new JsonObject());
+                    return;
+                }
+                
+                // calculate duration of all tracks and resolution
+                long duration = tracks.stream().mapToLong(a -> a.getLong(END_TIME) - a.getLong(START_TIME)).sum();
+                float resolution = (float)duration / Math.max(maxPoints - tracks.size() * 2, 1);
+                
+                // rename _id -> trackId
+                tracks.forEach(t -> {
+                    t.put(TRACK_ID, t.getString(OBJECT_ID));
+                    t.remove(OBJECT_ID);
+                });
+                
+                // query first track in list and send it to client, query
+                // more if necessary until there are no tracks to query anymore
+                findNextTrack(tracks, msg, resolution);
+            } else {
+                log.error("Could not fetch all tracks", ar.cause());
+                msg.fail(500, "Could not fetch all tracks");
+            }
+        });
+    }
+    
+    private <T> void findNextTrack(List<JsonObject> tracks, Message<T> msg, float resolution) {
+        // query the first track in the list and query the others only if the
+        // client asks us to
+        JsonObject track = tracks.remove(0);
+        
+        // query 'points' field only
+        JsonObject oneTrackQuery = new JsonObject().put(OBJECT_ID, track.getString(TRACK_ID));
+        JsonObject oneTrackFields = new JsonObject().put(POINTS, 1);
+        client.findOne(TRACKS_COLLECTION, oneTrackQuery, oneTrackFields, ar -> {
+            if (ar.succeeded()) {
+                JsonArray points = ar.result().getJsonArray(POINTS);
+                
+                // resamle points
+                points = resamplePoints(points, resolution);
+                track.put(POINTS, points);
+                
+                // send track to client and register a reply handler if there are more tracks
+                JsonObject answer = new JsonObject().put("track", track);
+                if (tracks.size() > 0) {
+                    msg.reply(answer, innerReply -> {
+                        if (innerReply.succeeded()) {
+                            findNextTrack(tracks, innerReply.result(), resolution);
+                        } else {
+                            log.warn("Client failed requesting more tracks", innerReply.cause());
+                        }
+                    });
+                } else {
+                    msg.reply(answer);
+                }
+            } else {
+                log.error("Could not fetch points of track: " + track.getString(TRACK_ID), ar.cause());
+                msg.fail(500, "Could not fetch points of track: " + track.getString(TRACK_ID));
+            }
+        });
+    }
+    
+    private JsonArray resamplePoints(JsonArray points, float resolution) {
+        JsonArray filteredPoints = new JsonArray();
+        int i = 0;
+        while (i < points.size()) {
+            JsonObject p = points.getJsonObject(i);
+            filteredPoints.add(p);
+            long time = p.getLong(TIME);
+            ++i;
+            while (i < points.size() && points.getJsonObject(i).getLong(TIME) - time < resolution) ++i;
+        }
+        if (!filteredPoints.getJsonObject(filteredPoints.size() - 1).equals(points.getJsonObject(points.size() - 1))) {
+            filteredPoints.add(points.getJsonObject(points.size() - 1));
+        }
+        return filteredPoints;
     }
 }
