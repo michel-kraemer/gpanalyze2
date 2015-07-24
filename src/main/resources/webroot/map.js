@@ -3,6 +3,8 @@ angular.module("map", ["trackservice"])
 .controller("MapCtrl", function($scope, $timeout, TrackService) {
   var trackPolylines = {};
   var doUpdateState = true;
+  var doResetTracks = true;
+  var resetTracksTimer;
   
   // initialize map
   var map = L.map('map', { zoomControl: false }).fitWorld();
@@ -21,6 +23,7 @@ angular.module("map", ["trackservice"])
         map.setView(L.latLng(match[1], match[2]), match[3]);
       } else {
         // move to current position (but keep min zoom level)
+        doResetTracks = false;
         map.locate({
           setView: true,
           maxZoom: 3
@@ -88,11 +91,26 @@ angular.module("map", ["trackservice"])
       updateZoomDisabled();
     }, 0);
     updateState();
+    startResetTracksTimer();
   });
   
   map.on("dragend", function() {
     updateState();
-  })
+    startResetTracksTimer();
+  });
+  
+  var startResetTracksTimer = function() {
+    if (doResetTracks) {
+      if (resetTracksTimer) {
+        $timeout.cancel(resetTracksTimer);
+      }
+      resetTracksTimer = $timeout(function() {
+        TrackService.resetTracks();
+      }, 1000);
+    } else {
+      doResetTracks = true;
+    }
+  }
   
   // add track listener
   var trackListener = {

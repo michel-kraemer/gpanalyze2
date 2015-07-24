@@ -6,12 +6,28 @@ angular.module("trackservice", ["ngMaterial", "eventbus"])
   
   var loadTrackHandler = function(track, replyHandler) {
     if (track.points) {
+      var oldtrack;
+      var found = -1;
+      for (var i = 0; i < openTracks.length; ++i) {
+        if (openTracks[i].trackId == track.trackId) {
+          oldtrack = openTracks[i];
+          found = i;
+          break;
+        }
+      }
+      if (found >= 0) {
+        openTracks[found] = track;
+      } else {
+        openTracks.push(track);
+      }
       trackListeners.forEach(function(l) {
+        if (l.onRemove && oldtrack) {
+          l.onRemove(oldtrack);
+        }
         if (l.onAdd) {
           l.onAdd(track);
         }
       });
-      openTracks.push(track);
     }
     
     if (replyHandler) {
@@ -43,14 +59,6 @@ angular.module("trackservice", ["ngMaterial", "eventbus"])
     },
     
     resetTracks: function() {
-      openTracks.forEach(function(track) {
-        trackListeners.forEach(function(l) {
-          if (l.onRemove) {
-            l.onRemove(track);
-          }
-        });
-      });
-      openTracks = [];
       loadAllTracks();
     }
   };
