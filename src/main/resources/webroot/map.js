@@ -1,6 +1,6 @@
-angular.module("map", [/* TODO */"ngMaterial", "eventbus"]/*, ["selection"]*/)
+angular.module("map", ["trackservice"])
 
-.controller("MapCtrl", function($scope, $timeout/*, MainService, SelectionService*/  /* TODO */, $mdDialog, EventBus) {
+.controller("MapCtrl", function($scope, $timeout, TrackService) {
   // initialize map
   var map = L.map('map', { zoomControl: false }).fitWorld();
   L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
@@ -39,34 +39,16 @@ angular.module("map", [/* TODO */"ngMaterial", "eventbus"]/*, ["selection"]*/)
     }, 0);
   });
   
-  
-  /////////////////////////////////////////
-  var trackHandler = function(reply, replyHandler) {
-    var track = reply.track;
-    if (track) {
-      var latlons = $.map(track.points, function(e) {
-        return L.latLng(e.lat, e.lon);
-      });
-      L.polyline(latlons, { color: "red" }).addTo(map);
-    }
-    
-    if (replyHandler) {
-      replyHandler({}, trackHandler);
-    }
+  // add track listener
+  var trackListener = {
+      onAdd: function(track) {
+        var latlons = $.map(track.points, function(e) {
+          return L.latLng(e.lat, e.lon);
+        });
+        L.polyline(latlons, { color: "red" }).addTo(map);
+      }
   };
-  
-  $timeout(function() {
-    EventBus.send("tracks", {
-      action: "findTracks"
-    }, trackHandler, function(err) {
-      $mdDialog.show($mdDialog.alert()
-          .parent(angular.element(document.body))
-          .title("Error")
-          .content("Could not load tracks. " + err.message)
-          .ok("OK"));
-    });
-  }, 2000);
-  //////////////////////////////////////////
+  TrackService.addListener(trackListener);
   
   /*var n = 0;
   var colors = [ "red", "blue", "green", "yellow" ];

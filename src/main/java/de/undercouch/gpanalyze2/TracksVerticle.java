@@ -411,9 +411,8 @@ public class TracksVerticle extends AbstractVerticle {
                 track.put(POINTS, points);
                 
                 // send track to client and register a reply handler if there are more tracks
-                JsonObject answer = new JsonObject().put("track", track);
                 if (tracks.size() > 0) {
-                    msg.reply(answer, innerReply -> {
+                    msg.reply(track, innerReply -> {
                         if (innerReply.succeeded()) {
                             findNextTrack(tracks, innerReply.result(), resolution);
                         } else {
@@ -421,7 +420,7 @@ public class TracksVerticle extends AbstractVerticle {
                         }
                     });
                 } else {
-                    msg.reply(answer);
+                    msg.reply(track);
                 }
             } else {
                 log.error("Could not fetch points of track: " + track.getString(TRACK_ID), ar.cause());
