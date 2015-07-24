@@ -1,6 +1,8 @@
-angular.module("trackservice", ["ngMaterial", "eventbus"])
+angular.module("trackservice", ["ngMaterial", "eventbus", "selectionservice"])
 
-.factory("TrackService", function($mdDialog, EventBus) {
+.factory("TrackService", function($mdDialog, $timeout, EventBus, SelectionService) {
+  var resetTracksTimer;
+  
   var openTracks = [];
   var trackListeners = [];
   
@@ -37,7 +39,8 @@ angular.module("trackservice", ["ngMaterial", "eventbus"])
   
   var loadAllTracks = function() {
     EventBus.send("tracks", {
-      action: "findTracks"
+      action: "findTracks",
+      bounds: SelectionService.getBounds()
     }, loadTrackHandler, function(err) {
       $mdDialog.show($mdDialog.alert()
           .parent(angular.element(document.body))
@@ -48,7 +51,24 @@ angular.module("trackservice", ["ngMaterial", "eventbus"])
   };
   
   // initially load all tracks
-  EventBus.addOpenListener(loadAllTracks);
+  EventBus.addOpenListener(function() {
+    startResetTracksTimer();
+  });
+  
+  var startResetTracksTimer = function() {
+    if (resetTracksTimer) {
+      $timeout.cancel(resetTracksTimer);
+    }
+    resetTracksTimer = $timeout(function() {
+      loadAllTracks();
+    }, 1000);
+  };
+  
+  SelectionService.addListener({
+    onSetBounds: function(bounds) {
+      startResetTracksTimer();
+    }
+  });
   
   return {
     addListener: function(listener) {
