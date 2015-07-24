@@ -69,7 +69,7 @@ public class TracksVerticle extends AbstractVerticle {
                 .put("connection_string", "mongodb://localhost:27017")
                 .put("db_name", "gpanalyze2"));
         
-        vertx.eventBus().consumer(TRACKS_COLLECTION, (Message<JsonObject> msg) -> {
+        vertx.eventBus().consumer("tracks", (Message<JsonObject> msg) -> {
             String action = msg.body().getString(ACTION);
             if (action == null) {
                 msg.fail(400, "No action given");

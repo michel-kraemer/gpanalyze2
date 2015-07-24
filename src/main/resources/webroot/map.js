@@ -1,6 +1,8 @@
 angular.module("map", ["trackservice"])
 
 .controller("MapCtrl", function($scope, $timeout, TrackService) {
+  var trackPolylines = {};
+  
   // initialize map
   var map = L.map('map', { zoomControl: false }).fitWorld();
   L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
@@ -45,7 +47,17 @@ angular.module("map", ["trackservice"])
         var latlons = $.map(track.points, function(e) {
           return L.latLng(e.lat, e.lon);
         });
-        L.polyline(latlons, { color: "red" }).addTo(map);
+        var polyline = L.polyline(latlons, { color: "red" });
+        polyline.addTo(map);
+        trackPolylines[track.trackId] = polyline;
+      },
+      
+      onRemove: function(track) {
+        var polyline = trackPolylines[track.trackId];
+        if (polyline) {
+          map.removeLayer(polyline);
+          delete trackPolylines[track.trackId];
+        }
       }
   };
   TrackService.addListener(trackListener);

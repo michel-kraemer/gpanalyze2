@@ -7,7 +7,9 @@ angular.module("trackservice", ["ngMaterial", "eventbus"])
   var loadTrackHandler = function(track, replyHandler) {
     if (track.points) {
       trackListeners.forEach(function(l) {
-        l.onAdd(track);
+        if (l.onAdd) {
+          l.onAdd(track);
+        }
       });
       openTracks.push(track);
     }
@@ -17,8 +19,7 @@ angular.module("trackservice", ["ngMaterial", "eventbus"])
     }
   };
   
-  // initially load all tracks
-  EventBus.addOpenListener(function() {
+  var loadAllTracks = function() {
     EventBus.send("tracks", {
       action: "findTracks"
     }, loadTrackHandler, function(err) {
@@ -28,7 +29,10 @@ angular.module("trackservice", ["ngMaterial", "eventbus"])
           .content("Could not load tracks. " + err.message)
           .ok("OK"));
     });
-  });
+  };
+  
+  // initially load all tracks
+  EventBus.addOpenListener(loadAllTracks);
   
   return {
     addListener: function(listener) {
@@ -36,6 +40,18 @@ angular.module("trackservice", ["ngMaterial", "eventbus"])
       openTracks.forEach(function(track) {
         listener.onAdd(track);
       });
+    },
+    
+    resetTracks: function() {
+      openTracks.forEach(function(track) {
+        trackListeners.forEach(function(l) {
+          if (l.onRemove) {
+            l.onRemove(track);
+          }
+        });
+      });
+      openTracks = [];
+      loadAllTracks();
     }
   };
 });

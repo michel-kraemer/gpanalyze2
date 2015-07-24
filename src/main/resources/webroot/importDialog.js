@@ -1,7 +1,7 @@
-angular.module("importDialog", ["ngMaterial", "ngFileUpload", "eventbus"])
+angular.module("importDialog", ["ngMaterial", "ngFileUpload", "eventbus", "trackservice"])
 
 .factory("ImportDialogCtrl", function() {
-  return function($scope, $mdDialog, $timeout, EventBus) {
+  return function($scope, $mdDialog, $timeout, EventBus, TrackService) {
     $scope.files = [];
     $scope.importing = false;
     $scope.progress = 0;
@@ -18,7 +18,7 @@ angular.module("importDialog", ["ngMaterial", "ngFileUpload", "eventbus"])
         var xmlstr = e.target.result;
         loadRawTracksFromFile(xmlstr, function(track) {
           // TODO support more than one track per file
-          importTrack(track[0], function(err) {
+          importTrack(track[0], function(err, trackId) {
             if (err) {
               $mdDialog.show($mdDialog.alert()
                   .parent(angular.element(document.body))
@@ -27,6 +27,7 @@ angular.module("importDialog", ["ngMaterial", "ngFileUpload", "eventbus"])
                   .ok("OK"));
             } else {
               $mdDialog.hide();
+              TrackService.resetTracks(trackId);
             }
           });
         });
@@ -109,7 +110,7 @@ angular.module("importDialog", ["ngMaterial", "ngFileUpload", "eventbus"])
         var trackId = reply.trackId;
         var doAddPoints = function(i, n) {
           if (i >= track.points.length) {
-            callback(null);
+            callback(null, trackId);
             return;
           }
           $timeout(function() {
