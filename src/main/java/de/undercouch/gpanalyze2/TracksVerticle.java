@@ -374,14 +374,17 @@ public class TracksVerticle extends AbstractVerticle {
                 .put("$or", new JsonArray()
                         .add(new JsonObject()
                             .put(START_TIME, new JsonObject()
-                                    .put("$gte", startTime))
-                            .put(START_TIME, new JsonObject()
+                                    .put("$gte", startTime)
                                     .put("$lte", endTime)))
                         .add(new JsonObject()
                             .put(END_TIME, new JsonObject()
-                                    .put("$gte", startTime))
+                                    .put("$gte", startTime)
+                                    .put("$lte", endTime)))
+                        .add(new JsonObject()
+                            .put(START_TIME, new JsonObject()
+                                    .put("$lte", startTime))
                             .put(END_TIME, new JsonObject()
-                                    .put("$lte", endTime))));
+                                    .put("$gte", endTime))));
         
         if (bounds != null && !bounds.isEmpty()) {
             double minX = bounds.getDouble(MINX);
