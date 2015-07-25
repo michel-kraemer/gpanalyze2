@@ -85,9 +85,15 @@ angular.module("trackservice", ["ngMaterial", "eventbus", "selectionservice"])
   };
   
   var loadAllTracks = function() {
+    var bounds = SelectionService.getBounds();
+    var width = bounds.maxX - bounds.minX;
+    var height = bounds.maxY - bounds.minY;
+    if (width > 90 || height > 90) {
+      bounds = undefined; // load all tracks
+    }
     EventBus.send("tracks", {
       action: "findTracks",
-      bounds: SelectionService.getBounds(),
+      bounds: bounds,
       startTime: SelectionService.getStartTime(),
       endTime: SelectionService.getEndTime()
     }, function(tracks) {
