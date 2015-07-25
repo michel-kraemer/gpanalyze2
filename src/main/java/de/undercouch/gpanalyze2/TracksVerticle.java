@@ -50,10 +50,6 @@ public class TracksVerticle extends AbstractVerticle {
     private static final String TIME = "time";
 
     private static final String LOC = "loc";
-    private static final String POINT = "Point";
-    private static final String POLYGON = "Polygon";
-    private static final String TYPE = "type";
-    private static final String COORDINATES = "coordinates";
     
     private static final String MINX = "minX";
     private static final String MINY = "minY";
@@ -168,9 +164,7 @@ public class TracksVerticle extends AbstractVerticle {
             JsonObject op = (JsonObject)p;
             double lat = op.getDouble(LAT);
             double lon = op.getDouble(LON);
-            JsonObject loc = new JsonObject()
-                    .put(TYPE, POINT)
-                    .put(COORDINATES, new JsonArray().add(lon).add(lat));
+            JsonArray loc = new JsonArray().add(lon).add(lat);
             return new JsonObject()
                     .put(LOC, loc)
                     .put(ELE,  op.getDouble(ELE))
@@ -292,9 +286,8 @@ public class TracksVerticle extends AbstractVerticle {
      * the given point
      */
     private Observable<Pair<String, Integer>> getTimeZone(JsonObject point) {
-        JsonObject loc = point.getJsonObject(LOC);
-        JsonArray coords = loc.getJsonArray(COORDINATES);
-        LatLng location = new LatLng(coords.getDouble(1), coords.getDouble(0));
+        JsonArray loc = point.getJsonArray(LOC);
+        LatLng location = new LatLng(loc.getDouble(1), loc.getDouble(0));
         GeoApiContext context = new GeoApiContext().setApiKey(GOOGLE_APIS_KEY);
         PendingResult<TimeZone> req = TimeZoneApi.getTimeZone(context, location);
         ObservableFuture<Pair<String, Integer>> f = RxHelper.observableFuture();
@@ -399,14 +392,9 @@ public class TracksVerticle extends AbstractVerticle {
             query
                     .put(POINTS + "." + LOC, new JsonObject()
                             .put("$geoWithin", new JsonObject()
-                                    .put("$geometry", new JsonObject()
-                                        .put(TYPE, POLYGON)
-                                        .put(COORDINATES, new JsonArray().add(new JsonArray()
-                                                .add(new JsonArray().add(minY).add(minX))
-                                                .add(new JsonArray().add(minY).add(maxX))
-                                                .add(new JsonArray().add(maxY).add(maxX))
-                                                .add(new JsonArray().add(maxY).add(minX))
-                                                .add(new JsonArray().add(minY).add(minX)))))));
+                                    .put("$box", new JsonArray()
+                                        .add(new JsonArray().add(minY).add(minX))
+                                        .add(new JsonArray().add(maxY).add(maxX)))));
         }
         
         // retrieve everything except 'points'
@@ -478,10 +466,9 @@ public class TracksVerticle extends AbstractVerticle {
                 // convert coordinates
                 points.forEach(obj -> {
                     JsonObject p = (JsonObject)obj;
-                    JsonObject loc = p.getJsonObject(LOC);
-                    JsonArray coordinates = loc.getJsonArray(COORDINATES);
-                    p.put(LAT, coordinates.getDouble(1));
-                    p.put(LON, coordinates.getDouble(0));
+                    JsonArray loc = p.getJsonArray(LOC);
+                    p.put(LAT, loc.getDouble(1));
+                    p.put(LON, loc.getDouble(0));
                     p.remove(LOC);
                 });
                 
