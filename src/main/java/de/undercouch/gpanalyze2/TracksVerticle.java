@@ -416,7 +416,7 @@ public class TracksVerticle extends AbstractVerticle {
             if (ar.succeeded()) {
                 List<JsonObject> tracks = ar.result();
                 if (tracks.size() == 0) {
-                    msg.reply(new JsonObject());
+                    msg.reply(new JsonArray());
                     return;
                 }
                 
