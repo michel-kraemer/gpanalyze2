@@ -6,38 +6,75 @@ angular.module("trackservice", ["ngMaterial", "eventbus", "selectionservice"])
   var openTracks = [];
   var trackListeners = [];
   
-  var loadTrackHandler = function(track, replyHandler) {
-    if (track.points) {
-      var oldtrack;
-      var found = -1;
-      for (var i = 0; i < openTracks.length; ++i) {
-        if (openTracks[i].trackId == track.trackId) {
-          oldtrack = openTracks[i];
-          found = i;
-          break;
+  var makeLoadTrackHandler = function(onAdd, onDone) {
+    var loadTrackHandler = function(track, replyHandler) {
+      if (track.points) {
+        var oldtrack;
+        var found = -1;
+        for (var i = 0; i < openTracks.length; ++i) {
+          if (openTracks[i].trackId == track.trackId) {
+            oldtrack = openTracks[i];
+            found = i;
+            break;
+          }
         }
+        if (found >= 0) {
+          openTracks[found] = track;
+        } else {
+          openTracks.push(track);
+        }
+        trackListeners.forEach(function(l) {
+          if (l.onRemove && oldtrack) {
+            l.onRemove(oldtrack);
+          }
+          if (l.onAdd) {
+            l.onAdd(track);
+          }
+        });
+        onAdd(track.trackId);
       }
-      if (found >= 0) {
-        openTracks[found] = track;
+      
+      if (replyHandler) {
+        replyHandler({}, loadTrackHandler);
       } else {
-        openTracks.push(track);
+        onDone();
       }
-      trackListeners.forEach(function(l) {
-        if (l.onRemove && oldtrack) {
-          l.onRemove(oldtrack);
-        }
-        if (l.onAdd) {
-          l.onAdd(track);
-        }
-      });
-    }
+    };
     
-    if (replyHandler) {
-      replyHandler({}, loadTrackHandler);
-    }
+    return loadTrackHandler;
   };
   
   var loadAllTracks = function() {
+    // save track ids of currently open tracks
+    var oldOpenTracks = openTracks.map(function(t) { return t.trackId; });
+    
+    var loadTrackHandler = makeLoadTrackHandler(function(trackId) {
+      // every time a track was loaded remove its track id from 'oldOpenTracks'
+      var i = oldOpenTracks.indexOf(trackId);
+      if (i >= 0) {
+        oldOpenTracks.splice(i, 1);
+      }
+    }, function() {
+      // after all tracks have been loaded remove all tracks that were
+      // loaded before, but have not been loaded again
+      oldOpenTracks.forEach(function(oldTrackId) {
+        var f = -1;
+        for (var i = 0; i < openTracks.length; ++i) {
+          if (openTracks[i].trackId == oldTrackId) {
+            f = i;
+            break;
+          }
+        }
+        if (f >= 0) {
+          trackListeners.forEach(function(l) {
+            if (l.onRemove) {
+              l.onRemove(openTracks[i]);
+            }
+          });
+          openTracks.splice(i, 1);
+        }
+      });
+    });
     EventBus.send("tracks", {
       action: "findTracks",
       bounds: SelectionService.getBounds()
