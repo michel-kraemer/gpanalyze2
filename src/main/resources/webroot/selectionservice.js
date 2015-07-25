@@ -2,6 +2,8 @@ angular.module("selectionservice", [])
 
 .factory("SelectionService", function() {
   var bounds = {};
+  var startTime = +new Date("2013-01-01");
+  var endTime = +new Date();
   
   var listeners = [];
   
@@ -20,12 +22,30 @@ angular.module("selectionservice", [])
       });
     },
     
+    setTime: function(newStartTime, newEndTime) {
+      startTime = newStartTime;
+      endTime = newEndTime;
+      listeners.forEach(function(l) {
+        if (l.onSetTime) {
+          l.onSetTime(startTime, endTime);
+        }
+      });
+    },
+    
     addListener: function(listener) {
       listeners.push(listener);
     },
     
     getBounds: function() {
       return bounds;
+    },
+    
+    getStartTime: function() {
+      return startTime;
+    },
+    
+    getEndTime: function() {
+      return endTime;
     }
   };
 });

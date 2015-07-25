@@ -1,6 +1,6 @@
-angular.module("graph", ["trackservice"])
+angular.module("graph", ["trackservice", "selectionservice"])
 
-.controller("GraphCtrl", function($scope, $timeout, TrackService) {
+.controller("GraphCtrl", function($scope, $timeout, TrackService, SelectionService) {
   var redrawTimer;
   
   var graph = $("#graph");
@@ -55,6 +55,11 @@ angular.module("graph", ["trackservice"])
       // on zoom redraw x axis and then redraw graph
       graph.select('.x.axis').call(xAxis);
       redrawGraph();
+      
+      // notify selection service
+      var startTime = +xScale.invert(0);
+      var endTime = +xScale.invert(width);
+      SelectionService.setTime(startTime, endTime);
     });
   
   // add transparent overlay which receives the mouse events for zooming and panning

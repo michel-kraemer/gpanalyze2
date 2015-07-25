@@ -77,7 +77,9 @@ angular.module("trackservice", ["ngMaterial", "eventbus", "selectionservice"])
     });
     EventBus.send("tracks", {
       action: "findTracks",
-      bounds: SelectionService.getBounds()
+      bounds: SelectionService.getBounds(),
+      startTime: SelectionService.getStartTime(),
+      endTime: SelectionService.getEndTime()
     }, loadTrackHandler, function(err) {
       $mdDialog.show($mdDialog.alert()
           .parent(angular.element(document.body))
@@ -103,6 +105,10 @@ angular.module("trackservice", ["ngMaterial", "eventbus", "selectionservice"])
   
   SelectionService.addListener({
     onSetBounds: function(bounds) {
+      startResetTracksTimer();
+    },
+    
+    onSetTime: function(startTime, endTime) {
       startResetTracksTimer();
     }
   });
