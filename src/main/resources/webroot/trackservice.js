@@ -6,81 +6,94 @@ angular.module("trackservice", ["ngMaterial", "eventbus", "selectionservice"])
   var openTracks = [];
   var trackListeners = [];
   
-  var makeLoadTrackHandler = function(onAdd, onDone) {
-    var loadTrackHandler = function(track, replyHandler) {
-      if (track.points) {
-        var oldtrack;
-        var found = -1;
-        for (var i = 0; i < openTracks.length; ++i) {
-          if (openTracks[i].trackId == track.trackId) {
-            oldtrack = openTracks[i];
-            found = i;
-            break;
-          }
+  var findTrack = function(trackId) {
+    for (var i = 0; i < openTracks.length; ++i) {
+      if (openTracks[i].trackId == trackId) {
+        return i;
+      }
+    }
+    return -1;
+  };
+  
+  var updateOrAddTrack = function(track) {
+    var oldTrackPos = findTrack(track.trackId);
+    trackListeners.forEach(function(l) {
+      if (l.onRemove && oldTrackPos >= 0) {
+        l.onRemove(openTracks[oldTrackPos]);
+      }
+      if (l.onAdd) {
+        l.onAdd(track);
+      }
+    });
+    if (oldTrackPos >= 0) {
+      openTracks[oldTrackPos] = track;
+    } else {
+      openTracks.push(track);
+    }
+  };
+  
+  var loadTracks = function(tracks) {
+    if (tracks.length == 0) {
+      return;
+    }
+    
+    var trackInfo = tracks[0];
+    var oldTrackPos = findTrack(trackInfo.trackId);
+    if (oldTrackPos >= 0 && openTracks[oldTrackPos].resolution == trackInfo.resolution) {
+      // we don't have to update the track. continue with the next one.
+      loadTracks(tracks.slice(1));
+      return;
+    }
+    
+    EventBus.send("tracks", {
+      action: "getTrack",
+      trackId: trackInfo.trackId,
+      resolution: trackInfo.resolution
+    }, function(track) {
+      updateOrAddTrack(track);
+      loadTracks(tracks.slice(1));
+    }, function(err) {
+      $mdDialog.show($mdDialog.alert()
+          .parent(angular.element(document.body))
+          .title("Error")
+          .content("Could not load track with id " + trackInfo.trackId + ". " + err.message)
+          .ok("OK"));
+    });
+  };
+  
+  var retainTracks = function(tracksToRetain) {
+    var newOpenTracks = [];
+    openTracks.forEach(function(track) {
+      var found = false;
+      for (var i = 0; i < tracksToRetain.length; ++i) {
+        if (track.trackId == tracksToRetain[i].trackId) {
+          found = true;
+          break;
         }
-        if (found >= 0) {
-          openTracks[found] = track;
-        } else {
-          openTracks.push(track);
-        }
+      }
+      if (found) {
+        newOpenTracks.push(track);
+      } else {
         trackListeners.forEach(function(l) {
-          if (l.onRemove && oldtrack) {
-            l.onRemove(oldtrack);
-          }
-          if (l.onAdd) {
-            l.onAdd(track);
+          if (l.onRemove) {
+            l.onRemove(track);
           }
         });
-        onAdd(track.trackId);
       }
-      
-      if (replyHandler) {
-        replyHandler({}, loadTrackHandler);
-      } else {
-        onDone();
-      }
-    };
-    
-    return loadTrackHandler;
+    });
+    openTracks = newOpenTracks;
   };
   
   var loadAllTracks = function() {
-    // save track ids of currently open tracks
-    var oldOpenTracks = openTracks.map(function(t) { return t.trackId; });
-    
-    var loadTrackHandler = makeLoadTrackHandler(function(trackId) {
-      // every time a track was loaded remove its track id from 'oldOpenTracks'
-      var i = oldOpenTracks.indexOf(trackId);
-      if (i >= 0) {
-        oldOpenTracks.splice(i, 1);
-      }
-    }, function() {
-      // after all tracks have been loaded remove all tracks that were
-      // loaded before, but have not been loaded again
-      oldOpenTracks.forEach(function(oldTrackId) {
-        var f = -1;
-        for (var i = 0; i < openTracks.length; ++i) {
-          if (openTracks[i].trackId == oldTrackId) {
-            f = i;
-            break;
-          }
-        }
-        if (f >= 0) {
-          trackListeners.forEach(function(l) {
-            if (l.onRemove) {
-              l.onRemove(openTracks[i]);
-            }
-          });
-          openTracks.splice(i, 1);
-        }
-      });
-    });
     EventBus.send("tracks", {
       action: "findTracks",
       bounds: SelectionService.getBounds(),
       startTime: SelectionService.getStartTime(),
       endTime: SelectionService.getEndTime()
-    }, loadTrackHandler, function(err) {
+    }, function(tracks) {
+      retainTracks(tracks);
+      loadTracks(tracks);
+    }, function(err) {
       $mdDialog.show($mdDialog.alert()
           .parent(angular.element(document.body))
           .title("Error")

@@ -42,6 +42,7 @@ public class TracksVerticle extends AbstractVerticle {
     private static final String TIME_ZONE_ID = "timeZoneId";
     private static final String TIME_ZONE_OFFSET = "timeZoneOffset";
     private static final String BOUNDS = "bounds";
+    private static final String RESOLUTION = "resolution";
     
     private static final String LAT = "lat";
     private static final String LON = "lon";
@@ -103,6 +104,10 @@ public class TracksVerticle extends AbstractVerticle {
             
             case "findTracks":
                 onFindTracks(msg);
+                break;
+            
+            case "getTrack":
+                onGetTrack(msg);
                 break;
             
             default:
@@ -419,64 +424,17 @@ public class TracksVerticle extends AbstractVerticle {
                 long duration = tracks.stream().mapToLong(a -> a.getLong(END_TIME) - a.getLong(START_TIME)).sum();
                 float resolution = (float)duration / Math.max(maxPoints - tracks.size() * 2, 1);
                 
-                // rename _id -> trackId
+                // rename _id -> trackId and add resolution
                 tracks.forEach(t -> {
                     t.put(TRACK_ID, t.getString(OBJECT_ID));
                     t.remove(OBJECT_ID);
+                    t.put(RESOLUTION, resolution);
                 });
                 
-                // query first track in list and send it to client, query
-                // more if necessary until there are no tracks to query anymore
-                findNextTrack(tracks, msg, resolution);
+                msg.reply(new JsonArray(tracks));
             } else {
                 log.error("Could not fetch all tracks", ar.cause());
                 msg.fail(500, "Could not fetch all tracks");
-            }
-        });
-    }
-    
-    private <T> void findNextTrack(List<JsonObject> tracks, Message<T> msg, float resolution) {
-        // query the first track in the list and query the others only if the
-        // client asks us to
-        JsonObject track = tracks.remove(0);
-        
-        // query 'points' field only
-        JsonObject oneTrackQuery = new JsonObject().put(OBJECT_ID, track.getString(TRACK_ID));
-        JsonObject oneTrackFields = new JsonObject().put(POINTS, 1);
-        client.findOne(TRACKS_COLLECTION, oneTrackQuery, oneTrackFields, ar -> {
-            if (ar.succeeded()) {
-                JsonArray points = ar.result().getJsonArray(POINTS);
-                
-                // resample points
-                points = resamplePoints(points, resolution);
-                
-                // convert coordinates
-                points.forEach(obj -> {
-                    JsonObject p = (JsonObject)obj;
-                    JsonObject loc = p.getJsonObject(LOC);
-                    JsonArray coordinates = loc.getJsonArray(COORDINATES);
-                    p.put(LAT, coordinates.getDouble(1));
-                    p.put(LON, coordinates.getDouble(0));
-                    p.remove(LOC);
-                });
-                
-                track.put(POINTS, points);
-                
-                // send track to client and register a reply handler if there are more tracks
-                if (tracks.size() > 0) {
-                    msg.reply(track, innerReply -> {
-                        if (innerReply.succeeded()) {
-                            findNextTrack(tracks, innerReply.result(), resolution);
-                        } else {
-                            log.warn("Client failed requesting more tracks", innerReply.cause());
-                        }
-                    });
-                } else {
-                    msg.reply(track);
-                }
-            } else {
-                log.error("Could not fetch points of track: " + track.getString(TRACK_ID), ar.cause());
-                msg.fail(500, "Could not fetch points of track: " + track.getString(TRACK_ID));
             }
         });
     }
@@ -495,5 +453,51 @@ public class TracksVerticle extends AbstractVerticle {
             filteredPoints.add(points.getJsonObject(points.size() - 1));
         }
         return filteredPoints;
+    }
+    
+    private void onGetTrack(Message<JsonObject> msg) {
+        String trackId = msg.body().getString(TRACK_ID);
+        if (trackId == null) {
+            msg.fail(400, "No track id given");
+            return;
+        }
+        
+        Float resolution = msg.body().getFloat(RESOLUTION);
+        
+        JsonObject query = new JsonObject().put(OBJECT_ID, trackId);
+        client.findOne(TRACKS_COLLECTION, query, null, ar -> {
+            if (ar.succeeded()) {
+                JsonArray points = ar.result().getJsonArray(POINTS);
+                
+                // resample points
+                if (resolution != null) {
+                    points = resamplePoints(points, resolution);
+                    ar.result().put(POINTS, points);
+                }
+                
+                // convert coordinates
+                points.forEach(obj -> {
+                    JsonObject p = (JsonObject)obj;
+                    JsonObject loc = p.getJsonObject(LOC);
+                    JsonArray coordinates = loc.getJsonArray(COORDINATES);
+                    p.put(LAT, coordinates.getDouble(1));
+                    p.put(LON, coordinates.getDouble(0));
+                    p.remove(LOC);
+                });
+                
+                // rename _id -> trackId and add resolution
+                ar.result().put(TRACK_ID, ar.result().getString(OBJECT_ID));
+                ar.result().remove(OBJECT_ID);
+                
+                if (resolution != null) {
+                    ar.result().put(RESOLUTION, resolution);
+                }
+                
+                msg.reply(ar.result());
+            } else {
+                log.error("Could not fetch points of track: " + trackId, ar.cause());
+                msg.fail(500, "Could not fetch points of track: " + trackId);
+            }
+        });
     }
 }
