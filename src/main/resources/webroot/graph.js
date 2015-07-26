@@ -84,8 +84,8 @@ angular.module("graph", ["trackservice", "selectionservice"])
   var drawTrack = function(track) {
     context.beginPath();
     track.points.forEach(function(p, i) {
-      var cx = xScale(p.time + track.timeZoneOffset) * 2;
-      var cy = yScale(p.ele) * 2;
+      var cx = Math.round(xScale(p.time + track.timeZoneOffset) * 2);
+      var cy = Math.round(yScale(p.ele) * 2);
       if (i == 0) {
         context.moveTo(cx, cy);
       } else {
