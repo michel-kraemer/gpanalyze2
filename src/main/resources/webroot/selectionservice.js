@@ -4,6 +4,7 @@ angular.module("selectionservice", [])
   var bounds = {};
   var startTimeLocal = +new Date("2013-01-01");
   var endTimeLocal = +new Date();
+  var hoverTimeLocal;
   
   var listeners = [];
   
@@ -32,6 +33,15 @@ angular.module("selectionservice", [])
       });
     },
     
+    setHoverTimeLocal: function(newHoverTimeLocal) {
+      hoverTimeLocal = newHoverTimeLocal;
+      listeners.forEach(function(l) {
+        if (l.onSetHoverTimeLocal) {
+          l.onSetHoverTimeLocal(hoverTimeLocal);
+        }
+      });
+    },
+    
     addListener: function(listener) {
       listeners.push(listener);
     },
@@ -46,6 +56,10 @@ angular.module("selectionservice", [])
     
     getEndTimeLocal: function() {
       return endTimeLocal;
+    },
+    
+    getHoverTimeLocal: function() {
+      return hoverTimeLocal;
     }
   };
 });

@@ -62,7 +62,16 @@ angular.module("graph", ["trackservice", "selectionservice"])
       SelectionService.setTimeLocal(startTimeLocal, endTimeLocal);
     });
   
-  // add transparent overlay which receives the mouse events for zooming and panning
+  var mousemove = function() {
+    var x0 = +xScale.invert(d3.mouse(this)[0]);
+    SelectionService.setHoverTimeLocal(x0);
+  };
+  
+  var mouseout = function() {
+    SelectionService.setHoverTimeLocal(undefined);
+  };
+  
+  // add transparent overlay which receives mouse events
   var overlay = d3.svg.area()
     .x(function(t) { return xScale(t); })
     .y0(0)
@@ -70,6 +79,8 @@ angular.module("graph", ["trackservice", "selectionservice"])
   graph.append("path")
     .attr("class", "overlay")
     .attr("d", overlay([xScale.domain()[0], xScale.domain()[1]]))
+    .on("mouseout", mouseout)
+    .on("mousemove", mousemove)
     .call(zoom);
   
   // add canvas for high performance drawing
@@ -82,19 +93,45 @@ angular.module("graph", ["trackservice", "selectionservice"])
   
   // draw a track to the canvas
   var drawTrack = function(track) {
+    var hoverTimeLocal = SelectionService.getHoverTimeLocal();
+    var hoverTimeCX;
+    var hoverTimeCY;
+    if (hoverTimeLocal && hoverTimeLocal >= track.startTimeLocal && hoverTimeLocal <= track.endTimeLocal) {
+      hoverTimeCX = Math.round(xScale(hoverTimeLocal) * 2);
+    }
+    
     context.beginPath();
     track.points.forEach(function(p, i) {
-      var cx = Math.round(xScale(p.time + track.timeZoneOffset) * 2);
+      var timeLocal = p.time + track.timeZoneOffset;
+      var cx = Math.round(xScale(timeLocal) * 2);
       var cy = Math.round(yScale(p.ele) * 2);
       if (i == 0) {
         context.moveTo(cx, cy);
       } else {
         context.lineTo(cx, cy);
       }
+      
+      if (hoverTimeLocal && i < track.points.length - 1) {
+        var timeLocalJ = track.points[i + 1].time + track.timeZoneOffset;
+        if (hoverTimeLocal >= timeLocal && hoverTimeLocal <= timeLocalJ) {
+          var dist = timeLocalJ - timeLocal;
+          var weight = 1 - ((hoverTimeLocal - timeLocal) / dist);
+          var weightj = 1 - ((timeLocalJ - hoverTimeLocal) / dist);
+          var hoverEle = p.ele * weight + track.points[i + 1].ele * weightj;
+          hoverTimeCY = Math.round(yScale(hoverEle) * 2);
+        }
+      }
     });
     context.strokeStyle = "#fff";
     context.lineWidth = 3;
     context.stroke();
+    
+    if (hoverTimeCX && hoverTimeCY) {
+      context.beginPath();
+      context.arc(hoverTimeCX, hoverTimeCY, 8, 0, 2 * Math.PI);
+      context.fillStyle = "#f00";
+      context.fill();
+    }
   };
   
   // redraw all tracks
@@ -124,6 +161,12 @@ angular.module("graph", ["trackservice", "selectionservice"])
     onRemove: function(track) {
       delete tracks[track.trackId];
       startRedrawTimer();
+    }
+  });
+  
+  SelectionService.addListener({
+    onSetHoverTimeLocal: function(hoverTimeLocal) {
+      redrawGraph();
     }
   });
 });

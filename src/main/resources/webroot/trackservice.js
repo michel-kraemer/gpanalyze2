@@ -146,6 +146,35 @@ angular.module("trackservice", ["ngMaterial", "eventbus", "selectionservice"])
     
     resetTracks: function() {
       loadAllTracks();
-    }
+    },
+    
+    getPoint: function(timeLocal) {
+      for (var i = 0; i < openTracks.length; ++i) {
+        var track = openTracks[i];
+        if (timeLocal < track.startTimeLocal || timeLocal > track.endTimeLocal) {
+          continue;
+        }
+        
+        for (var j = 0; j < track.points.length; ++j) {
+          var p = track.points[j];
+          var ptime = p.time + track.timeZoneOffset;
+          if (ptime >= timeLocal) {
+            if (j == 0) {
+              return p;
+            } else {
+              var np = track.points[j - 1];
+              var nptime = np.time + track.timeZoneOffset;
+              if (ptime - timeLocal > timeLocal - nptime) {
+                return track.points[j - 1];
+              } else {
+                return p;
+              }
+            }
+          }
+        }
+      }
+      
+      return null;
+    },
   };
 });
