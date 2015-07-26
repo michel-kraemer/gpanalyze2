@@ -152,9 +152,8 @@ public class TracksVerticle extends AbstractVerticle {
             JsonObject op = (JsonObject)p;
             Double lat = op.getDouble(LAT);
             Double lon = op.getDouble(LON);
-            Double ele = op.getDouble(ELE);
             String time = op.getString(TIME);
-            return (lat != null && lon != null && ele != null && time != null);
+            return (lat != null && lon != null && time != null);
         });
         if (!valid) {
             msg.fail(400, "Invalid track points");
@@ -169,7 +168,7 @@ public class TracksVerticle extends AbstractVerticle {
             JsonArray loc = new JsonArray().add(lon).add(lat);
             return new JsonObject()
                     .put(LOC, loc)
-                    .put(ELE,  op.getDouble(ELE))
+                    .put(ELE, op.getDouble(ELE)) // ele may be null!
                     .put(TIME, op.getString(TIME));
         });
         
@@ -483,6 +482,16 @@ public class TracksVerticle extends AbstractVerticle {
         return filteredPoints;
     }
     
+    private JsonArray filterInvalidPoints(JsonArray points) {
+        // filter out points without elevation
+        JsonArray result = new JsonArray(points.stream().filter(p ->
+            ((JsonObject)p).getFloat(ELE) != null).collect(Collectors.toList()));
+        if (result.size() != points.size()) {
+            log.warn("Removed " + (points.size() - result.size()) + " invalid points.");
+        }
+        return result;
+    }
+    
     private void onGetTrack(Message<JsonObject> msg) {
         String trackId = msg.body().getString(TRACK_ID);
         if (trackId == null) {
@@ -496,6 +505,8 @@ public class TracksVerticle extends AbstractVerticle {
         client.findOne(TRACKS_COLLECTION, query, null, ar -> {
             if (ar.succeeded()) {
                 JsonArray points = ar.result().getJsonArray(POINTS);
+                
+                points = filterInvalidPoints(points);
                 
                 // resample points
                 if (resolution != null) {
