@@ -39,6 +39,8 @@ public class TracksVerticle extends AbstractVerticle {
     private static final String MAX_POINTS = "maxPoints";
     private static final String START_TIME = "startTime";
     private static final String END_TIME = "endTime";
+    private static final String START_TIME_LOCAL = "startTimeLocal";
+    private static final String END_TIME_LOCAL = "endTimeLocal";
     private static final String TIME_ZONE_ID = "timeZoneId";
     private static final String TIME_ZONE_OFFSET = "timeZoneOffset";
     private static final String BOUNDS = "bounds";
@@ -196,6 +198,8 @@ public class TracksVerticle extends AbstractVerticle {
             .flatMap(n -> updateStartTime(trackId, minTimestamp))
             .flatMap(n -> updateEndTime(trackId, maxTimestamp))
             .flatMap(n -> updateTimeZone(trackId, newPointsList.get(0)))
+            .flatMap(timeZoneOffset -> updateStartTimeLocal(trackId, minTimestamp + timeZoneOffset).map(v -> timeZoneOffset))
+            .flatMap(timeZoneOffset -> updateEndTimeLocal(trackId, maxTimestamp + timeZoneOffset))
             .flatMap(n -> addPointsToTrack(trackId, points))
             .subscribe(n -> {
                 msg.reply(new JsonObject().put("count", n));
@@ -218,6 +222,16 @@ public class TracksVerticle extends AbstractVerticle {
         return f;
     }
     
+    private Observable<Void> updateTime(String trackId, long time, String op, String attr) {
+        JsonObject trackQuery = new JsonObject().put(OBJECT_ID, trackId);
+        JsonObject update = new JsonObject()
+                .put(op, new JsonObject()
+                        .put(attr, time));
+        ObservableFuture<Void> f = RxHelper.observableFuture();
+        client.update(TRACKS_COLLECTION, trackQuery, update, f.toHandler());
+        return f;
+    }
+    
     /**
      * Update a track's start time
      * @param trackId the track's id
@@ -225,15 +239,9 @@ public class TracksVerticle extends AbstractVerticle {
      * @return an observable that will complete when the operation has finished
      */
     private Observable<Void> updateStartTime(String trackId, long startTime) {
-        JsonObject trackQuery = new JsonObject().put(OBJECT_ID, trackId);
         // only update the start time if the given value is less than the
         // one already stored in the database
-        JsonObject update = new JsonObject()
-                .put("$min", new JsonObject()
-                        .put(START_TIME, startTime));
-        ObservableFuture<Void> f = RxHelper.observableFuture();
-        client.update(TRACKS_COLLECTION, trackQuery, update, f.toHandler());
-        return f;
+        return updateTime(trackId, startTime, "$min", START_TIME);
     }
     
     /**
@@ -243,15 +251,33 @@ public class TracksVerticle extends AbstractVerticle {
      * @return an observable that will complete when the operation has finished
      */
     private Observable<Void> updateEndTime(String trackId, long endTime) {
-        JsonObject trackQuery = new JsonObject().put(OBJECT_ID, trackId);
         // only update the end time if the given value is greater than the
         // one already stored in the database
-        JsonObject update = new JsonObject()
-                .put("$max", new JsonObject()
-                        .put(END_TIME, endTime));
-        ObservableFuture<Void> f = RxHelper.observableFuture();
-        client.update(TRACKS_COLLECTION, trackQuery, update, f.toHandler());
-        return f;
+        return updateTime(trackId, endTime, "$max", END_TIME);
+    }
+    
+    /**
+     * Update a track's local start time
+     * @param trackId the track's id
+     * @param startTime the new start time
+     * @return an observable that will complete when the operation has finished
+     */
+    private Observable<Void> updateStartTimeLocal(String trackId, long startTime) {
+        // only update the start time if the given value is less than the
+        // one already stored in the database
+        return updateTime(trackId, startTime, "$min", START_TIME_LOCAL);
+    }
+    
+    /**
+     * Update a track's local end time
+     * @param trackId the track's id
+     * @param endTime the new end time
+     * @return an observable that will complete when the operation has finished
+     */
+    private Observable<Void> updateEndTimeLocal(String trackId, long endTime) {
+        // only update the end time if the given value is greater than the
+        // one already stored in the database
+        return updateTime(trackId, endTime, "$max", END_TIME_LOCAL);
     }
     
     /**
@@ -260,7 +286,7 @@ public class TracksVerticle extends AbstractVerticle {
      * @param point one of the track's points
      * @return an observable that will complete when the operation has finished
      */
-    private Observable<Void> updateTimeZone(String trackId, JsonObject point) {
+    private Observable<Integer> updateTimeZone(String trackId, JsonObject point) {
         JsonObject trackQuery = new JsonObject().put(OBJECT_ID, trackId);
         ObservableFuture<JsonObject> f = RxHelper.observableFuture();
         // check if the track already has time zone information
@@ -269,12 +295,13 @@ public class TracksVerticle extends AbstractVerticle {
         return f.flatMap(obj -> {
                 // if the track has no time zone information yet retrieve it
                 // and then store it
-                if (obj.getInteger(TIME_ZONE_OFFSET) == null) {
+                Integer offset = obj.getInteger(TIME_ZONE_OFFSET);
+                if (offset == null) {
                     return getTimeZone(point)
-                            .flatMap(offset -> updateTimeZone(trackId, offset));
+                            .flatMap(newOffset -> updateTimeZone(trackId, newOffset));
                 }
                 // the track already has time zone information. do nothing.
-                return Observable.just(null);
+                return Observable.just(offset);
             });
     }
     
@@ -314,7 +341,7 @@ public class TracksVerticle extends AbstractVerticle {
      * @param offset the time zone information as retrieved through {@link #getTimeZone(JsonObject)}
      * @return an observable that will complete when the operation has finished 
      */
-    private Observable<Void> updateTimeZone(String trackId, Pair<String, Integer> offset) {
+    private Observable<Integer> updateTimeZone(String trackId, Pair<String, Integer> offset) {
         JsonObject trackQuery = new JsonObject().put(OBJECT_ID, trackId);
         JsonObject update = new JsonObject()
                 .put("$set", new JsonObject()
@@ -322,7 +349,7 @@ public class TracksVerticle extends AbstractVerticle {
                         .put(TIME_ZONE_OFFSET, offset.getRight()));
         ObservableFuture<Void> f = RxHelper.observableFuture();
         client.update(TRACKS_COLLECTION, trackQuery, update, f.toHandler());
-        return f;
+        return f.map(v -> offset.getRight());
     }
     
     /**
@@ -365,23 +392,36 @@ public class TracksVerticle extends AbstractVerticle {
         Integer maxPoints = msg.body().getInteger(MAX_POINTS, 60 * 60 * 24);
         Long startTime = msg.body().getLong(START_TIME, 0L);
         Long endTime = msg.body().getLong(END_TIME, System.currentTimeMillis());
+        Long startTimeLocal = msg.body().getLong(START_TIME_LOCAL);
+        Long endTimeLocal = msg.body().getLong(END_TIME_LOCAL);
         JsonObject bounds = msg.body().getJsonObject(BOUNDS);
+        
+        String startTimeAttr = START_TIME;
+        if (startTimeLocal != null) {
+            startTimeAttr = START_TIME_LOCAL;
+            startTime = startTimeLocal;
+        }
+        String endTimeAttr = END_TIME;
+        if (endTimeLocal != null) {
+            endTimeAttr = END_TIME_LOCAL;
+            endTime = endTimeLocal;
+        }
         
         // find all tracks in the given search window
         JsonObject query = new JsonObject()
                 .put("$or", new JsonArray()
                         .add(new JsonObject()
-                            .put(START_TIME, new JsonObject()
+                            .put(startTimeAttr, new JsonObject()
                                     .put("$gte", startTime)
                                     .put("$lte", endTime)))
                         .add(new JsonObject()
-                            .put(END_TIME, new JsonObject()
+                            .put(endTimeAttr, new JsonObject()
                                     .put("$gte", startTime)
                                     .put("$lte", endTime)))
                         .add(new JsonObject()
-                            .put(START_TIME, new JsonObject()
+                            .put(startTimeAttr, new JsonObject()
                                     .put("$lte", startTime))
-                            .put(END_TIME, new JsonObject()
+                            .put(endTimeAttr, new JsonObject()
                                     .put("$gte", endTime))));
         
         if (bounds != null && !bounds.isEmpty()) {

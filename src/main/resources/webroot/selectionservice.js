@@ -2,8 +2,8 @@ angular.module("selectionservice", [])
 
 .factory("SelectionService", function() {
   var bounds = {};
-  var startTime = +new Date("2013-01-01");
-  var endTime = +new Date();
+  var startTimeLocal = +new Date("2013-01-01");
+  var endTimeLocal = +new Date();
   
   var listeners = [];
   
@@ -22,12 +22,12 @@ angular.module("selectionservice", [])
       });
     },
     
-    setTime: function(newStartTime, newEndTime) {
-      startTime = newStartTime;
-      endTime = newEndTime;
+    setTimeLocal: function(newStartTimeLocal, newEndTimeLocal) {
+      startTimeLocal = newStartTimeLocal;
+      endTimeLocal = newEndTimeLocal;
       listeners.forEach(function(l) {
-        if (l.onSetTime) {
-          l.onSetTime(startTime, endTime);
+        if (l.onSetTimeLocal) {
+          l.onSetTimeLocal(startTimeLocal, endTimeLocal);
         }
       });
     },
@@ -40,12 +40,12 @@ angular.module("selectionservice", [])
       return bounds;
     },
     
-    getStartTime: function() {
-      return startTime;
+    getStartTimeLocal: function() {
+      return startTimeLocal;
     },
     
-    getEndTime: function() {
-      return endTime;
+    getEndTimeLocal: function() {
+      return endTimeLocal;
     }
   };
 });

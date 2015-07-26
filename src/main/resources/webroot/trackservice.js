@@ -98,8 +98,8 @@ angular.module("trackservice", ["ngMaterial", "eventbus", "selectionservice"])
     EventBus.send("tracks", {
       action: "findTracks",
       bounds: bounds,
-      startTime: SelectionService.getStartTime(),
-      endTime: SelectionService.getEndTime()
+      startTimeLocal: SelectionService.getStartTimeLocal(),
+      endTimeLocal: SelectionService.getEndTimeLocal()
     }, function(tracks) {
       retainTracks(tracks);
       loadTracks(tracks);
@@ -131,7 +131,7 @@ angular.module("trackservice", ["ngMaterial", "eventbus", "selectionservice"])
       startResetTracksTimer();
     },
     
-    onSetTime: function(startTime, endTime) {
+    onSetTimeLocal: function(startTimeLocal, endTimeLocal) {
       startResetTracksTimer();
     }
   });

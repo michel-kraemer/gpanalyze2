@@ -57,9 +57,9 @@ angular.module("graph", ["trackservice", "selectionservice"])
       redrawGraph();
       
       // notify selection service
-      var startTime = +xScale.invert(0);
-      var endTime = +xScale.invert(width);
-      SelectionService.setTime(startTime, endTime);
+      var startTimeLocal = +xScale.invert(0);
+      var endTimeLocal = +xScale.invert(width);
+      SelectionService.setTimeLocal(startTimeLocal, endTimeLocal);
     });
   
   // add transparent overlay which receives the mouse events for zooming and panning
