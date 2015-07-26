@@ -123,7 +123,7 @@ angular.module("trackservice", ["ngMaterial", "eventbus", "selectionservice"])
     }
     resetTracksTimer = $timeout(function() {
       loadAllTracks();
-    }, 1000);
+    }, 500);
   };
   
   SelectionService.addListener({

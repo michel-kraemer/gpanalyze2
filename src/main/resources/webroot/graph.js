@@ -111,7 +111,7 @@ angular.module("graph", ["trackservice", "selectionservice"])
     }
     redrawTimer = $timeout(function() {
       redrawGraph();
-    }, 500);
+    }, 100);
   };
   
   // add or remove tracks from the graph
