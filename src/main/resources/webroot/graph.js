@@ -37,7 +37,7 @@ angular.module("graph", ["trackservice", "selectionservice"])
   xScale.domain([+new Date("2013-01-01"), +new Date()]);
   
   // the current view of the y scale (in meters)
-  yScale.domain([0, 1500]);
+  yScale.domain([-50, 1500]);
   
   // add x and y axis to graph
   graph.append("g")
