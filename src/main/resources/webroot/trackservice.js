@@ -50,7 +50,11 @@ angular.module("trackservice", ["ngMaterial", "eventbus", "selectionservice"])
       trackId: trackInfo.trackId,
       resolution: trackInfo.resolution
     }, function(track) {
-      updateOrAddTrack(track);
+      // call updateOrAddTrack() asynchronously so we can start
+      // loading the next track already
+      $timeout(function() {
+        updateOrAddTrack(track);
+      }, 0);
       loadTracks(tracks.slice(1));
     }, function(err) {
       $mdDialog.show($mdDialog.alert()
