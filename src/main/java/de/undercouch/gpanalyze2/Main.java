@@ -43,6 +43,10 @@ public class Main extends AbstractVerticle {
         sockJSHandler.bridge(bridgeOptions);
         router.route("/eventbus/*").handler(sockJSHandler);
         
+        // serve cached map tiles
+        MapTileHandler mapTileHandler = new MapTileHandler(vertx);
+        router.routeWithRegex("/map/(.+)$").handler(mapTileHandler);
+        
         // serve our static resources
         StaticHandler staticHandler = StaticHandler.create();
         router.route("/*").handler(staticHandler);

@@ -29,6 +29,7 @@ dependencies {
     compile "org.webjars.npm:vertx3-eventbus-client:3.0.0-1"
     
     compile "com.google.maps:google-maps-services:0.1.7"
+    compile "org.apache.commons:commons-jcs-core:2.0-beta-1"
     compile "org.apache.commons:commons-lang3:3.4"
     compile "commons-io:commons-io:2.4"
 }

@@ -7,7 +7,7 @@ angular.module("map", ["trackservice", "selectionservice"])
   
   // initialize map
   var map = L.map('map', { zoomControl: false }).fitWorld();
-  L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+  L.tileLayer('/map/http%3A%2F%2Fa.tile.osm.org%2F{z}%2F{x}%2F{y}.png', {
     attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
     minZoom: 3
   }).addTo(map);
