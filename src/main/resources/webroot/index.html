@@ -53,6 +53,9 @@
       <div class="col-md-12 height-100" id="graph-container" ng-controller="GraphCtrl" flex layout="row">
         <canvas id="graph_canvas"></canvas>
         <svg id="graph"></svg>
+        <div id="graph_hovermarker" ng-style="{top:tooltip.top,left:tooltip.left}" ng-show="tooltip.show">
+          <div class="graph-tooltip" ng-bind-html="tooltip.content"></div>
+        </div>
       </div>
     </md-toolbar>
 </div>
@@ -61,6 +64,7 @@
 <script src="/assets/angularjs/1.3.15/angular.js"></script>
 <script src="/assets/angularjs/1.3.15/angular-animate.js"></script>
 <script src="/assets/angularjs/1.3.15/angular-aria.js"></script>
+<script src="/assets/angularjs/1.3.15/angular-sanitize.js"></script>
 <script src="/assets/ng-file-upload/5.0.9/ng-file-upload-shim.js"></script>
 <script src="/assets/ng-file-upload/5.0.9/ng-file-upload.js"></script>
 <script src="/assets/angular-material/0.10.0/angular-material.js"></script>

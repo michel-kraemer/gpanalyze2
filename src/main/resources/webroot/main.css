@@ -99,3 +99,30 @@ body {
   z-index: 1;
   pointer-events: none;
 }
+
+#graph_hovermarker {
+  display: block;
+  position: absolute;
+  height: 1px;
+  width: 1px;
+  pointer-events: none;
+}
+
+.graph-tooltip {
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 10px;
+  position: absolute;
+  z-index: 100;
+  overflow: hidden;
+  pointer-events: none;
+  line-height: 12px;
+  height: 32px;
+  padding-top: 4px;
+  padding-left: 8px;
+  padding-right: 8px;
+  transform: translate(-50%,-140%) scale(1);
+  background-color: rgba(0,0,0,0.54);
+  color: #fff;
+  text-align: center;
+}

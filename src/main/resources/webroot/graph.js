@@ -1,7 +1,15 @@
-angular.module("graph", ["trackservice", "selectionservice"])
+angular.module("graph", ["trackservice", "selectionservice", "ngSanitize"])
 
 .controller("GraphCtrl", function($scope, $timeout, TrackService, SelectionService) {
+  $scope.tooltip = {
+    show: false,
+    top: 200,
+    left: 50,
+    content: ""
+  };
+  
   var redrawTimer;
+  var tooltipTimer;
   
   var graph = $("#graph");
   var canvas = $("#graph_canvas");
@@ -109,11 +117,10 @@ angular.module("graph", ["trackservice", "selectionservice"])
   
   // draw a track to the canvas
   var drawTrack = function(track) {
-    var hoverTimeLocal = SelectionService.getHoverTimeLocal();
-    var hoverTimeCX;
-    var hoverTimeCY;
-    if (hoverTimeLocal && hoverTimeLocal >= track.startTimeLocal && hoverTimeLocal <= track.endTimeLocal) {
-      hoverTimeCX = Math.round(xScale(hoverTimeLocal) * 2);
+    var hoverTimeCX = Math.round(getHoverX(track) * 2);
+    var hoverTimeCY = null;
+    if (hoverTimeCX !== null) {
+      hoverTimeCY = Math.round(getHoverY(track) * 2);
     }
     
     context.beginPath();
@@ -126,23 +133,12 @@ angular.module("graph", ["trackservice", "selectionservice"])
       } else {
         context.lineTo(cx, cy);
       }
-      
-      if (hoverTimeLocal && i < track.points.length - 1) {
-        var timeLocalJ = track.points[i + 1].time + track.timeZoneOffset;
-        if (hoverTimeLocal >= timeLocal && hoverTimeLocal <= timeLocalJ) {
-          var dist = timeLocalJ - timeLocal;
-          var weight = 1 - ((hoverTimeLocal - timeLocal) / dist);
-          var weightj = 1 - ((timeLocalJ - hoverTimeLocal) / dist);
-          var hoverEle = p.ele * weight + track.points[i + 1].ele * weightj;
-          hoverTimeCY = Math.round(yScale(hoverEle) * 2);
-        }
-      }
     });
     context.strokeStyle = "#3f51b5";
     context.lineWidth = 3;
     context.stroke();
     
-    if (hoverTimeCX && hoverTimeCY) {
+    if (hoverTimeCX !== null && hoverTimeCY !== null) {
       context.beginPath();
       context.arc(hoverTimeCX, hoverTimeCY, 10, 0, 2 * Math.PI);
       context.fillStyle = "#ff4081";
@@ -150,6 +146,36 @@ angular.module("graph", ["trackservice", "selectionservice"])
       context.strokeStyle = "#fff";
       context.stroke();
     }
+  };
+  
+  var getHoverX = function(track) {
+    var hoverTimeLocal = SelectionService.getHoverTimeLocal();
+    if (hoverTimeLocal && hoverTimeLocal >= track.startTimeLocal && hoverTimeLocal <= track.endTimeLocal) {
+      return xScale(hoverTimeLocal);
+    }
+    return null;
+  };
+  
+  var getHoverY = function(track) {
+    var hoverTimeLocal = SelectionService.getHoverTimeLocal();
+    if (!hoverTimeLocal) {
+      return null;
+    }
+    var hoverTimeCY = null;
+    track.points.forEach(function(p, i) {
+      var timeLocal = p.time + track.timeZoneOffset;
+      if (i < track.points.length - 1) {
+        var timeLocalJ = track.points[i + 1].time + track.timeZoneOffset;
+        if (hoverTimeLocal >= timeLocal && hoverTimeLocal <= timeLocalJ) {
+          var dist = timeLocalJ - timeLocal;
+          var weight = 1 - ((hoverTimeLocal - timeLocal) / dist);
+          var weightj = 1 - ((timeLocalJ - hoverTimeLocal) / dist);
+          var hoverEle = p.ele * weight + track.points[i + 1].ele * weightj;
+          hoverTimeCY = yScale(hoverEle);
+        }
+      }
+    });
+    return hoverTimeCY;
   };
   
   // redraw all tracks
@@ -169,6 +195,44 @@ angular.module("graph", ["trackservice", "selectionservice"])
     }, 100);
   };
   
+  var startTooltipTimer = function() {
+    var x = null;
+    var y = null;
+    for (var trackId in tracks) {
+      if (tracks.hasOwnProperty(trackId)) {
+        var track = tracks[trackId];
+        var lx = getHoverX(track);
+        var ly = null;
+        if (lx !== null) {
+          ly = getHoverY(track);
+        }
+        if (lx !== null && ly !== null) {
+          x = lx;
+          y = ly;
+          break;
+        }
+      }
+    }
+    killTooltip();
+    if (x !== null && y !== null) {
+      tooltipTimer = $timeout(function() {
+        $scope.tooltip.top = Math.round(y) + margin.top;
+        $scope.tooltip.left = Math.round(x) + margin.left;
+        $scope.tooltip.show = true;
+        $scope.tooltip.content = new XDate(xScale.invert(x), true).toString("HH:mm") +
+          "<br>" + Math.round(yScale.invert(y)) + "&nbsp;m";
+      }, 500);
+    }
+  };
+  
+  var killTooltip = function() {
+    if (tooltipTimer) {
+      $timeout.cancel(tooltipTimer);
+      tooltipTimer = undefined;
+      $scope.tooltip.show = false;
+    }
+  };
+  
   // add or remove tracks from the graph
   TrackService.addListener({
     onAdd: function(track) {
@@ -185,6 +249,13 @@ angular.module("graph", ["trackservice", "selectionservice"])
   SelectionService.addListener({
     onSetHoverTimeLocal: function(hoverTimeLocal) {
       redrawGraph();
+      $timeout(function() {
+        if (hoverTimeLocal) {
+          startTooltipTimer();
+        } else {
+          killTooltip();
+        }
+      }, 0);
     }
   });
 });
