@@ -65,7 +65,7 @@ public class TracksVerticle extends AbstractVerticle {
     static {
         try {
             GOOGLE_APIS_KEY = IOUtils.toString(TracksVerticle.class.getResource("/google_apis_key.txt"));
-        } catch (IOException e) {
+        } catch (IOException | NullPointerException e) {
             throw new RuntimeException("Please put a file called 'google_apis_key.txt' in your classpath", e);
         }
     }
