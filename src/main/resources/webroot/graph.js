@@ -117,10 +117,14 @@ angular.module("graph", ["trackservice", "selectionservice", "ngSanitize"])
   
   // draw a track to the canvas
   var drawTrack = function(track) {
-    var hoverTimeCX = Math.round(getHoverX(track) * 2);
+    var hoverTimeCX = getHoverX(track);
     var hoverTimeCY = null;
     if (hoverTimeCX !== null) {
-      hoverTimeCY = Math.round(getHoverY(track) * 2);
+      hoverTimeCX = Math.round(hoverTimeCX * 2);
+      hoverTimeCY = getHoverY(track);
+      if (hoverTimeCY !== null) {
+        hoverTimeCY = Math.round(hoverTimeCY * 2);
+      }
     }
     
     context.beginPath();
