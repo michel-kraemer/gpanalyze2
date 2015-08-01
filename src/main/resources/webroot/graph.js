@@ -8,7 +8,7 @@ angular.module("graph", ["trackservice", "selectionservice"])
   
   var tracks = {};
   
-  var margin = {top: 25, right: 50, bottom: 40, left: 50};
+  var margin = {top: 15, right: 50, bottom: 40, left: 50};
   var width = graph.width() - margin.left - margin.right;
   var height = graph.height() - margin.top - margin.bottom;
   
@@ -16,6 +16,17 @@ angular.module("graph", ["trackservice", "selectionservice"])
   graph = d3.select("#graph")
     .append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+  
+  var customTimeFormat = d3.time.format.utc.multi([
+    [".%L", function(d) { return d.getUTCMilliseconds(); }],
+    [":%S", function(d) { return d.getUTCSeconds(); }],
+    ["%H:%M", function(d) { return d.getUTCMinutes(); }],
+    ["%H:00", function(d) { return d.getUTCHours(); }],
+    ["%a %d", function(d) { return d.getUTCDay() && d.getUTCDate() != 1; }],
+    ["%b %d", function(d) { return d.getUTCDate() != 1; }],
+    ["%B", function(d) { return d.getUTCMonth(); }],
+    ["%Y", function() { return true; }]
+  ]);
   
   // scales used to calculate screen coordinates for x and y values
   var xScale = d3.time.scale.utc()
@@ -30,6 +41,7 @@ angular.module("graph", ["trackservice", "selectionservice"])
     .scale(xScale)
     .outerTickSize(0)
     .innerTickSize(-height)
+    .tickFormat(customTimeFormat)
     .orient("bottom");
   var yAxis = d3.svg.axis()
     .scale(yScale)

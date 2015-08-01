@@ -48,8 +48,9 @@
         <md-icon ng-show="visible">expand_more</md-icon>
       </md-button>
     </div>
-    <md-toolbar class="md-huge" id="bottom-bar">
-      <div class="col-md-12 height-100" ng-controller="GraphCtrl" flex="100" layout="row">
+    <md-toolbar class="md-huge" id="bottom-bar" layout="column">
+      <h3 class="title"><time-range start-time="{{ startTimeLocal }}" end-time="{{ endTimeLocal }}"></time-range></h3>
+      <div class="col-md-12 height-100" id="graph-container" ng-controller="GraphCtrl" flex layout="row">
         <canvas id="graph_canvas"></canvas>
         <svg id="graph"></svg>
       </div>
@@ -76,6 +77,7 @@
 <script src="main.js"></script>
 <script src="map.js"></script>
 <script src="selectionservice.js"></script>
+<script src="timerange.js"></script>
 <script src="trackservice.js"></script>
 
 </body>
