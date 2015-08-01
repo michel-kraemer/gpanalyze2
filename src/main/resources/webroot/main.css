@@ -54,17 +54,24 @@ body {
 }
 
 #bottom-bar-container text {
-  fill: #fff;
+  fill: rgb(46%,46%,46%);
   font-size: 12px;
 }
 
-#bottom-bar-container .axis path {
+#bottom-bar-container .axis path, #bottom-bar-container .axis line {
   fill: none;
+  stroke-width: 1px;
+  stroke: rgb(88%,88%,88%);
+  shape-rendering: crispEdges;
 }
 
 #bottom-bar-container .overlay {
   stroke-width: 0px;
   fill-opacity: 0;
+}
+
+#bottom-bar {
+  background-color: rgb(250,250,250);
 }
 
 #graph, #graph_canvas {
@@ -73,4 +80,10 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
+}
+
+#graph_canvas {
+  border-right: 1px solid rgb(88%,88%,88%);
+  z-index: 1;
+  pointer-events: none;
 }

@@ -28,16 +28,20 @@ angular.module("graph", ["trackservice", "selectionservice"])
   // the x and y axis
   var xAxis = d3.svg.axis()
     .scale(xScale)
+    .outerTickSize(0)
+    .innerTickSize(-height)
     .orient("bottom");
   var yAxis = d3.svg.axis()
     .scale(yScale)
+    .innerTickSize(-width)
+    .outerTickSize(0)
     .orient("left");
   
   // the current view of the x scale (in milliseconds sind epoch)
   xScale.domain([+new Date("2013-01-01"), +new Date()]);
   
   // the current view of the y scale (in meters)
-  yScale.domain([-50, 1500]);
+  yScale.domain([-100, 1600]);
   
   // add x and y axis to graph
   graph.append("g")
@@ -122,15 +126,17 @@ angular.module("graph", ["trackservice", "selectionservice"])
         }
       }
     });
-    context.strokeStyle = "#fff";
+    context.strokeStyle = "#3f51b5";
     context.lineWidth = 3;
     context.stroke();
     
     if (hoverTimeCX && hoverTimeCY) {
       context.beginPath();
-      context.arc(hoverTimeCX, hoverTimeCY, 8, 0, 2 * Math.PI);
-      context.fillStyle = "#f00";
+      context.arc(hoverTimeCX, hoverTimeCY, 10, 0, 2 * Math.PI);
+      context.fillStyle = "#ff4081";
       context.fill();
+      context.strokeStyle = "#fff";
+      context.stroke();
     }
   };
   
