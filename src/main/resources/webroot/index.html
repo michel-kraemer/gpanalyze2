@@ -53,7 +53,14 @@
       </md-button>
     </div>
     <md-toolbar class="md-huge" id="bottom-bar" layout="column">
-      <h3 class="title"><time-range start-time="{{ startTimeLocal }}" end-time="{{ endTimeLocal }}"></time-range></h3>
+      <div layout="row" layout-align="start end">
+        <h3 class="title" flex><time-range start-time="{{ startTimeLocal }}" end-time="{{ endTimeLocal }}"></time-range></h3>
+        <div id="graph_speed_toggle" layout="row">
+          <md-icon ng-class="{'md-accent': !displaySpeed}" ng-click="setDisplaySpeed(false)">terrain<md-tooltip>Elevation</md-tooltip></md-icon>
+          <md-switch ng-model="displaySpeed" aria-label="Switch between elevation profile and speed profile"></md-switch>
+          <md-icon ng-class="{'md-accent': displaySpeed}" ng-click="setDisplaySpeed(true)">directions_run<md-tooltip>Speed</md-tooltip></md-icon>
+        </div>
+      </div>
       <div class="col-md-12 height-100" id="graph-container" ng-controller="GraphCtrl" flex layout="row">
         <canvas id="graph_canvas"></canvas>
         <svg id="graph"></svg>

@@ -88,6 +88,14 @@ button::-moz-focus-inner {
   color: rgba(0,0,0,0.54);
 }
 
+#bottom-bar md-icon {
+  color: rgba(0,0,0,0.54);
+}
+
+#bottom-bar md-icon.md-accent {
+  color: rgb(255,64,129);
+}
+
 #bottom-bar .title {
   margin: 0;
   padding-left: 50px;
@@ -138,4 +146,22 @@ button::-moz-focus-inner {
   background-color: rgba(0,0,0,0.54);
   color: #fff;
   text-align: center;
+}
+
+#graph_speed_toggle md-switch {
+  margin: 0 0 0 10px;
+}
+
+#graph_speed_toggle md-switch.md-checked .md-thumb {
+  background-color: rgb(250,250,250);
+}
+
+#graph_speed_toggle md-switch.md-checked .md-bar {
+  background-color: rgb(158,158,158);
+}
+
+#graph_speed_toggle md-icon {
+  cursor: default;
+  border: none;
+  outline: none;
 }

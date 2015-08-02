@@ -11,6 +11,7 @@ import java.util.stream.Stream;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.geotools.referencing.GeodeticCalculator;
 
 import com.google.maps.GeoApiContext;
 import com.google.maps.PendingResult;
@@ -50,6 +51,8 @@ public class TracksVerticle extends AbstractVerticle {
     private static final String LON = "lon";
     private static final String ELE = "ele";
     private static final String TIME = "time";
+    private static final String DIST = "dist";
+    private static final String SPEED = "speed";
 
     private static final String LOC = "loc";
     
@@ -73,6 +76,7 @@ public class TracksVerticle extends AbstractVerticle {
     private static final Logger log = LoggerFactory.getLogger(TracksVerticle.class.getName());
     
     private MongoClient client;
+    private GeodeticCalculator geodeticCalculator = new GeodeticCalculator();
     
     @Override
     public void start() {
@@ -508,6 +512,9 @@ public class TracksVerticle extends AbstractVerticle {
                 
                 points = filterInvalidPoints(points);
                 
+                // TODO calculate distance and speed only once and save in database
+                calculateDistanceAndSpeed(points);
+                
                 // resample points
                 if (resolution != null) {
                     points = resamplePoints(points, resolution);
@@ -537,5 +544,49 @@ public class TracksVerticle extends AbstractVerticle {
                 msg.fail(500, "Could not fetch points of track: " + trackId);
             }
         });
+    }
+    
+    private double calculateDistanceAndSpeed(JsonArray points) {
+        double totalDistance = 0.0;
+        double lastlat = 0.0;
+        double lastlon = 0.0;
+        double lastele = 0.0;
+        long lasttime = 0;
+        for (int i = 0; i < points.size(); ++i) {
+            JsonObject p = points.getJsonObject(i);
+            JsonArray loc = p.getJsonArray(LOC);
+            double lat = loc.getDouble(1);
+            double lon = loc.getDouble(0);
+            double ele = p.getDouble(ELE);
+            long time = p.getLong(TIME);
+            
+            double speed = 0.0;
+            if (i > 0) {
+                double dist = distance(lastlat, lastlon, lastele, lat, lon, ele); // in meters
+                totalDistance += dist;
+                
+                double timedist = (time - lasttime) / 1000; // in seconds
+                speed = dist / timedist * 3.6; // in km/h
+            }
+            
+            p.put(SPEED, speed);
+            p.put(DIST, totalDistance);
+            
+            lastlat = lat;
+            lastlon = lon;
+            lastele = ele;
+            lasttime = time;
+        }
+        return totalDistance;
+    }
+    
+    private double distance(double lat1, double lon1, double ele1,
+            double lat2, double lon2, double ele2) {
+        geodeticCalculator.setStartingGeographicPoint(lon1, lat1);
+        geodeticCalculator.setDestinationGeographicPoint(lon2, lat2);
+        double dist = geodeticCalculator.getOrthodromicDistance();
+        double eledx = Math.abs(ele1 - ele2);
+        dist = Math.sqrt(dist * dist + eledx * eledx);
+        return dist;
     }
 }

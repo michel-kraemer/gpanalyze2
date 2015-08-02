@@ -10,6 +10,14 @@ repositories {
     maven {
         url 'https://oss.sonatype.org/content/repositories/snapshots'
     }
+    
+    // geotools
+    maven {
+        url 'http://download.java.net/maven/2'
+    }
+    maven {
+        url 'http://download.osgeo.org/webdav/geotools/'
+    }
 }
 
 dependencies {
@@ -32,6 +40,8 @@ dependencies {
     compile "org.apache.commons:commons-jcs-core:2.0-beta-1"
     compile "org.apache.commons:commons-lang3:3.4"
     compile "commons-io:commons-io:2.4"
+    
+    compile "org.geotools:gt-geometry:13.2"
 }
 
 task wrapper(type: Wrapper) {

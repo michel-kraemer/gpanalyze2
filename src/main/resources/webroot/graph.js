@@ -10,13 +10,14 @@ angular.module("graph", ["trackservice", "selectionservice", "ngSanitize"])
   
   var redrawTimer;
   var tooltipTimer;
+  var displaySpeed = false;
   
   var graph = $("#graph");
   var canvas = $("#graph_canvas");
   
   var tracks = {};
   
-  var margin = {top: 15, right: 50, bottom: 40, left: 50};
+  var margin = {top: 15, right: 0, bottom: 40, left: 50};
   var width = graph.width() - margin.left - margin.right;
   var height = graph.height() - margin.top - margin.bottom;
   
@@ -61,14 +62,21 @@ angular.module("graph", ["trackservice", "selectionservice", "ngSanitize"])
   xScale.domain([+new Date("2013-01-01"), +new Date()]);
   
   // the current view of the y scale (in meters)
-  yScale.domain([-100, 1600]);
+  var updateYScaleDomain = function() {
+    if (displaySpeed) {
+      yScale.domain([0, 200]);
+    } else {
+      yScale.domain([-100, 1600]);
+    }
+  };
+  updateYScaleDomain();
   
   // add x and y axis to graph
   graph.append("g")
     .attr("class", "x axis")
     .attr("transform", "translate(0," + height + ")")
     .call(xAxis);
-  graph.append("g")
+  var yAxisElement = graph.append("g")
     .attr("class", "y axis")
     .call(yAxis);
   
@@ -131,7 +139,8 @@ angular.module("graph", ["trackservice", "selectionservice", "ngSanitize"])
     track.points.forEach(function(p, i) {
       var timeLocal = p.time + track.timeZoneOffset;
       var cx = Math.round(xScale(timeLocal) * 2);
-      var cy = Math.round(yScale(p.ele) * 2);
+      var yvalue = displaySpeed ? p.speed : p.ele;
+      var cy = Math.round(yScale(yvalue) * 2);
       if (i == 0) {
         context.moveTo(cx, cy);
       } else {
@@ -174,8 +183,10 @@ angular.module("graph", ["trackservice", "selectionservice", "ngSanitize"])
           var dist = timeLocalJ - timeLocal;
           var weight = 1 - ((hoverTimeLocal - timeLocal) / dist);
           var weightj = 1 - ((timeLocalJ - hoverTimeLocal) / dist);
-          var hoverEle = p.ele * weight + track.points[i + 1].ele * weightj;
-          hoverTimeCY = yScale(hoverEle);
+          var yvalue = displaySpeed ? p.speed : p.ele;
+          var yvaluej = displaySpeed ? track.points[i + 1].speed : track.points[i + 1].ele;
+          var hoverValue = yvalue * weight + yvaluej * weightj;
+          hoverTimeCY = yScale(hoverValue);
         }
       }
     });
@@ -224,7 +235,8 @@ angular.module("graph", ["trackservice", "selectionservice", "ngSanitize"])
         $scope.tooltip.left = Math.round(x) + margin.left;
         $scope.tooltip.show = true;
         $scope.tooltip.content = new XDate(xScale.invert(x), true).toString("HH:mm") +
-          "<br>" + Math.round(yScale.invert(y)) + "&nbsp;m";
+          "<br>" + Math.round(yScale.invert(y)) + "&nbsp;";
+        $scope.tooltip.content += displaySpeed ? "km/h" : "m";
       }, 500);
     }
   };
@@ -236,6 +248,15 @@ angular.module("graph", ["trackservice", "selectionservice", "ngSanitize"])
       $scope.tooltip.show = false;
     }
   };
+  
+  $scope.$on("onDisplaySpeedChanged", function(event, newDisplaySpeed) {
+    if (newDisplaySpeed != displaySpeed) {
+      displaySpeed = newDisplaySpeed;
+      updateYScaleDomain();
+      yAxisElement.call(yAxis);
+      redrawGraph();
+    }
+  });
   
   // add or remove tracks from the graph
   TrackService.addListener({
