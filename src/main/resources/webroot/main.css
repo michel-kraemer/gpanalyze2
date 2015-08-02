@@ -2,6 +2,11 @@ body {
   overflow: hidden;
 }
 
+button::-moz-focus-inner {
+  outline: none;
+  border: none;
+}
+
 .md-button.md-fab md-icon {
   color: #666;
 }
