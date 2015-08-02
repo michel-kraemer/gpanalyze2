@@ -493,6 +493,20 @@ public class TracksVerticle extends AbstractVerticle {
         if (result.size() != points.size()) {
             log.warn("Removed " + (points.size() - result.size()) + " invalid points.");
         }
+        
+        // filter out non-strictly increasing timestamps
+        JsonArray increasingResult = new JsonArray();
+        long lastTime = result.getJsonObject(0).getLong(TIME);
+        for (int i = 1; i < result.size(); ++i) {
+            JsonObject p = result.getJsonObject(i);
+            long time = p.getLong(TIME);
+            if (time > lastTime) {
+                increasingResult.add(p);
+            }
+            lastTime = time;
+        }
+        result = increasingResult;
+        
         return result;
     }
     
@@ -552,6 +566,7 @@ public class TracksVerticle extends AbstractVerticle {
         double lastlon = 0.0;
         double lastele = 0.0;
         long lasttime = 0;
+        double lastspeed = 0.0;
         for (int i = 0; i < points.size(); ++i) {
             JsonObject p = points.getJsonObject(i);
             JsonArray loc = p.getJsonArray(LOC);
@@ -567,6 +582,9 @@ public class TracksVerticle extends AbstractVerticle {
                 
                 double timedist = (time - lasttime) / 1000; // in seconds
                 speed = dist / timedist * 3.6; // in km/h
+                if (Double.isInfinite(speed) || Double.isNaN(speed)) {
+                    speed = lastspeed;
+                }
             }
             
             p.put(SPEED, speed);
@@ -576,6 +594,7 @@ public class TracksVerticle extends AbstractVerticle {
             lastlon = lon;
             lastele = ele;
             lasttime = time;
+            lastspeed = speed;
         }
         return totalDistance;
     }
