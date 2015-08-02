@@ -13,35 +13,39 @@
 </head>
 <body layout="column">
 
-<div layout="row" layout-align="end start" ng-controller="MainMenuCtrl">
-  <md-content class="md-padding" layout="column">
-    <md-fab-speed-dial md-direction="down" class="md-fling">
-      <md-fab-trigger>
-        <md-button aria-label="menu" class="md-fab md-primary">
-          <md-icon>menu</md-icon>
-        </md-button>
-      </md-fab-trigger>
-      <md-fab-actions>
-        <md-button aria-label="upload" class="md-fab md-mini md-raised" ng-click="showImportDialog($event)">
-          <md-icon>file_upload</md-icon>
-        </md-button>
-      </md-fab-actions>
-    </md-fab-speed-dial>
-  </md-content>
-</div>
+<div layout="column" flex>
+  <div layout="row">
+    <div layout="column" layout-align="start start" class="md-padding" ng-controller="MapCtrl">
+      <div id="map"></div>
+      <md-button aria-label="menu" class="md-fab md-mini md-raised" ng-click="zoomIn()" ng-disabled="zoomInDisabled">
+        <md-icon>add</md-icon>
+      </md-button>
+      <md-button aria-label="upload" class="md-fab md-mini md-raised" ng-click="zoomOut()" ng-disabled="zoomOutDisabled">
+        <md-icon>remove</md-icon>
+      </md-button>
+    </div>
+    
+    <div flex></div>
+    
+    <div layout="column" layout-align="end start" ng-controller="MainMenuCtrl" class="md-padding">
+      <md-fab-speed-dial md-direction="down" class="md-fling">
+        <md-fab-trigger>
+          <md-button aria-label="menu" class="md-fab md-primary">
+            <md-icon>menu</md-icon>
+          </md-button>
+        </md-fab-trigger>
+        <md-fab-actions>
+          <md-button aria-label="upload" class="md-fab md-mini md-raised" ng-click="showImportDialog($event)">
+            <md-icon>file_upload</md-icon>
+          </md-button>
+        </md-fab-actions>
+      </md-fab-speed-dial>
+    </div>
+  </div>
+  
+  <div flex></div>
 
-<div layout="row" flex="100" ng-controller="MapCtrl" id="map" layout-align="start start">
-  <md-content class="md-padding" layout="column">
-    <md-button aria-label="menu" class="md-fab md-mini md-raised" ng-click="zoomIn()" ng-disabled="zoomInDisabled">
-      <md-icon>add</md-icon>
-    </md-button>
-    <md-button aria-label="upload" class="md-fab md-mini md-raised" ng-click="zoomOut()" ng-disabled="zoomOutDisabled">
-      <md-icon>remove</md-icon>
-    </md-button>
-  </md-content>
-</div>
-
-<div layout="column" layout-align="end end" ng-controller="BottomBarCtrl" id="bottom-bar-container" ng-class="{'bottom-bar-visible': visible}">
+  <div layout="column" ng-controller="BottomBarCtrl" id="bottom-bar-container" ng-class="{'bottom-bar-visible': visible}">
     <div class="md-padding" layout="row" layout-align="end end" ng-class="{'bottom-bar-visible': visible}">
       <md-button class="md-raised" id="expand-bottombar-button" ng-class="{'bottom-bar-visible': visible}" ng-click="toggle()">
         <md-icon ng-hide="visible">expand_less</md-icon>
@@ -58,6 +62,7 @@
         </div>
       </div>
     </md-toolbar>
+  </div>
 </div>
 
 <script src="/assets/jquery/2.1.4/jquery.js"></script>
