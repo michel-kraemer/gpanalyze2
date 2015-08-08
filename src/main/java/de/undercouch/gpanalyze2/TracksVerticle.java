@@ -192,6 +192,11 @@ public class TracksVerticle extends AbstractVerticle {
         
         JsonArray points = new JsonArray(newPointsList);
         
+        // NOTE: we can't filter for invalid points here and we cannot calculate
+        // distance and speed values for each point because we need the whole
+        // track for this. we are going to update the track later when it is
+        // retrieved the first time (see #updateTrack(JsonObject))
+        
         // check if there is a track with the given id
         countTracks(trackId)
             .map(n -> {
@@ -359,6 +364,22 @@ public class TracksVerticle extends AbstractVerticle {
     }
     
     /**
+     * Update a track's points in the database
+     * @param trackId the track's id
+     * @param points the new track points
+     * @return an observable that will complete when the operation has finished 
+     */
+    private Observable<Void> updatePoints(String trackId, JsonArray points) {
+        JsonObject trackQuery = new JsonObject().put(OBJECT_ID, trackId);
+        JsonObject update = new JsonObject()
+                .put("$set", new JsonObject()
+                        .put(POINTS, points));
+        ObservableFuture<Void> f = RxHelper.observableFuture();
+        client.update(TRACKS_COLLECTION, trackQuery, update, f.toHandler());
+        return f;
+    }
+    
+    /**
      * Add all given points to a track in the database
      * @param trackId the track's id
      * @param points the points to add
@@ -523,19 +544,16 @@ public class TracksVerticle extends AbstractVerticle {
         Float resolution = msg.body().getFloat(RESOLUTION);
         
         JsonObject query = new JsonObject().put(OBJECT_ID, trackId);
-        client.findOne(TRACKS_COLLECTION, query, null, ar -> {
-            if (ar.succeeded()) {
-                JsonArray points = ar.result().getJsonArray(POINTS);
-                
-                points = filterInvalidPoints(points);
-                
-                // TODO calculate distance and speed only once and save in database
-                calculateDistanceAndSpeed(points);
+        ObservableFuture<JsonObject> f = RxHelper.observableFuture();
+        client.findOne(TRACKS_COLLECTION, query, null, f.toHandler());
+        f.flatMap(this::updateTrack)
+            .subscribe(track -> {
+                JsonArray points = track.getJsonArray(POINTS);
                 
                 // resample points
                 if (resolution != null) {
                     points = resamplePoints(points, resolution);
-                    ar.result().put(POINTS, points);
+                    track.put(POINTS, points);
                 }
                 
                 // convert coordinates
@@ -548,19 +566,18 @@ public class TracksVerticle extends AbstractVerticle {
                 });
                 
                 // rename _id -> trackId and add resolution
-                ar.result().put(TRACK_ID, ar.result().getString(OBJECT_ID));
-                ar.result().remove(OBJECT_ID);
+                track.put(TRACK_ID, track.getString(OBJECT_ID));
+                track.remove(OBJECT_ID);
                 
                 if (resolution != null) {
-                    ar.result().put(RESOLUTION, resolution);
+                    track.put(RESOLUTION, resolution);
                 }
                 
-                msg.reply(ar.result());
-            } else {
-                log.error("Could not fetch points of track: " + trackId, ar.cause());
+                msg.reply(track);
+            }, err -> {
+                log.error("Could not fetch points of track: " + trackId, err);
                 msg.fail(500, "Could not fetch points of track: " + trackId);
-            }
-        });
+            });
     }
     
     private double calculateDistanceAndSpeed(JsonArray points) {
@@ -637,5 +654,31 @@ public class TracksVerticle extends AbstractVerticle {
         double eledx = Math.abs(ele1 - ele2);
         dist = Math.sqrt(dist * dist + eledx * eledx);
         return dist;
+    }
+    
+    private Observable<JsonObject> updateTrack(JsonObject track) {
+        // check if track needs to be updated
+        JsonArray points = track.getJsonArray(POINTS);
+        if (points.getJsonObject(0).getDouble(SPEED) != null) {
+            // no update necessary
+            return Observable.just(track);
+        } else {
+            // calculate distance and speed
+            ObservableFuture<JsonObject> of = RxHelper.observableFuture();
+            vertx.executeBlocking((Future<JsonObject> f) -> {
+                log.info("Updating track: calculating values for distance and speed ...");
+                JsonArray filteredPoints = filterInvalidPoints(points);
+                calculateDistanceAndSpeed(filteredPoints);
+                track.put(POINTS, filteredPoints);
+                f.complete(track);
+            }, of.toHandler());
+            
+            // save track back to database
+            return of.flatMap(updatedTrack -> {
+                log.info("Updating track in database ...");
+                return updatePoints(updatedTrack.getString(OBJECT_ID),
+                        updatedTrack.getJsonArray(POINTS)).map(v -> updatedTrack);
+            });
+        }
     }
 }
