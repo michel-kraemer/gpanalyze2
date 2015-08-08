@@ -1,42 +1,75 @@
 angular.module("eventbus", [])
 
 .factory("EventBus", function() {
-  var eb = new vertx.EventBus("http://localhost:8080/eventbus");
+  var eb;
   
   var initialOpenHandled = false;
   var openListeners = [];
   
-  eb.onopen = function() {
-    if (!initialOpenHandled) {
-      openListeners.forEach(function(l) {
-        l();
-      });
-      initialOpenHandled = true;
-      openListeners = [];
-    }
+  var connect = function() {
+    eb = new vertx.EventBus("http://localhost:8080/eventbus");
+    initialOpenHandled = false;
+    eb.onopen = function() {
+      if (!initialOpenHandled) {
+        openListeners.forEach(function(l) {
+          l();
+        });
+        initialOpenHandled = true;
+        openListeners = [];
+      }
+    };
   };
+  connect();
   
-  // TODO eb.onclose or eb.onerror -> try to reconnect
+  var reconnect = function(done) {
+    var retry = function() {
+      if (eb.readyState() === vertx.EventBus.OPEN) {
+        done();
+      } else if (eb.readyState() === vertx.EventBus.CONNECTING) {
+        setTimeout(function() {
+          retry()
+        }, 1000);
+      } else {
+        console.error("Reconnecting ...");
+        setTimeout(function() {
+          connect();
+          retry();
+        }, 2000);
+      }
+    };
+    retry();
+  };
   
   return {
     send: function(address, message, headers, replyHandler, failureHandler) {
-      return eb.send.apply(eb, arguments);
+      var a = arguments;
+      reconnect(function() {
+        eb.send.apply(eb, a);
+      });
     },
     
     publish: function(address, message, headers) {
-      return eb.publish.apply(eb, arguments);
+      var a = arguments;
+      reconnect(function() {
+        eb.publish.apply(eb, a);
+      });
     },
     
     registerHandler: function(address, handler) {
-      return eb.registerHandler(address, handler);
+      reconnect(function() {
+        eb.registerHandler(address, handler);
+      });
     },
     
     unregisterHandler: function(address, handler) {
-      return eb.unregisterHandler(address, handler);
+      reconnect(function() {
+        eb.unregisterHandler(address, handler);
+      });
     },
     
     addOpenListener: function(listener) {
-      if (initialOpenHandled) {
+      reconnect(function() {});
+      if (eb.readyState() === vertx.EventBus.OPEN && initialOpenHandled) {
         listener();
       } else {
         openListeners.push(listener);
