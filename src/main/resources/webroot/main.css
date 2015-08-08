@@ -31,6 +31,11 @@ button::-moz-focus-inner {
   max-height: 300px;
 }
 
+.mdi {
+  font-size: 24px;
+  padding-top: 1px;
+}
+
 #map {
   position: absolute;
   top: 0;

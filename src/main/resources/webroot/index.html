@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GPAnalyze2</title>
 <link href="https://fonts.googleapis.com/css?family=RobotoDraft:300,400,500,700,400italic" rel="stylesheet">
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<link href="/assets/mdi/1.1.34/css/materialdesignicons.min.css" media="all" rel="stylesheet" type="text/css">
 <link href="/assets/angular-material/0.10.0/angular-material.css" rel="stylesheet">
 <link href="/assets/leaflet/0.7.3/leaflet.css" rel="stylesheet">
 <link href="main.css" rel="stylesheet">
@@ -18,10 +18,10 @@
     <div layout="column" layout-align="start start" class="md-padding" ng-controller="MapCtrl">
       <div id="map"></div>
       <md-button aria-label="menu" class="md-fab md-mini md-raised" ng-click="zoomIn()" ng-disabled="zoomInDisabled">
-        <md-icon>add</md-icon>
+        <md-icon class="mdi mdi-plus"></md-icon>
       </md-button>
       <md-button aria-label="upload" class="md-fab md-mini md-raised" ng-click="zoomOut()" ng-disabled="zoomOutDisabled">
-        <md-icon>remove</md-icon>
+        <md-icon class="mdi mdi-minus"></md-icon>
       </md-button>
     </div>
     
@@ -31,12 +31,12 @@
       <md-fab-speed-dial md-direction="down" class="md-fling">
         <md-fab-trigger>
           <md-button aria-label="menu" class="md-fab md-primary">
-            <md-icon>menu</md-icon>
+            <md-icon class="mdi mdi-menu"></md-icon>
           </md-button>
         </md-fab-trigger>
         <md-fab-actions>
           <md-button aria-label="upload" class="md-fab md-mini md-raised" ng-click="showImportDialog($event)">
-            <md-icon>file_upload</md-icon>
+            <md-icon class="mdi mdi-upload"></md-icon>
           </md-button>
         </md-fab-actions>
       </md-fab-speed-dial>
@@ -48,8 +48,8 @@
   <div layout="column" ng-controller="BottomBarCtrl" id="bottom-bar-container" ng-class="{'bottom-bar-visible': visible}">
     <div class="md-padding" layout="row" layout-align="end end" ng-class="{'bottom-bar-visible': visible}">
       <md-button class="md-raised" id="expand-bottombar-button" ng-class="{'bottom-bar-visible': visible}" ng-click="toggle()">
-        <md-icon ng-hide="visible">expand_less</md-icon>
-        <md-icon ng-show="visible">expand_more</md-icon>
+        <md-icon ng-hide="visible" class="mdi mdi-chevron-double-up"></md-icon>
+        <md-icon ng-show="visible" class="mdi mdi-chevron-double-down"></md-icon>
       </md-button>
     </div>
     <md-toolbar class="md-huge" id="bottom-bar" layout="column">
