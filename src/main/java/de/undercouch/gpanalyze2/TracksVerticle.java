@@ -21,13 +21,10 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
-import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.math3.analysis.interpolation.LinearInterpolator;
-import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 import org.geotools.referencing.GeodeticCalculator;
 
 import com.google.maps.GeoApiContext;
@@ -378,6 +375,16 @@ public class TracksVerticle extends AbstractVerticle {
             .subscribe(track -> {
                 JsonArray points = track.getJsonArray(POINTS);
                 
+                // calculate moving average for elevation values (window size = 120s)
+                Averager averager = new Averager(120, 1000,
+                        points.stream().mapToDouble(p -> ((JsonObject)p).getLong(TIME)).toArray(),
+                        points.stream().mapToDouble(p -> ((JsonObject)p).getDouble(ELE)).toArray());
+                points.forEach(obj -> {
+                    JsonObject p = (JsonObject)obj;
+                    long time = p.getLong(TIME);
+                    p.put(ELE, averager.apply(time));
+                });
+                
                 // resample points
                 if (resolution != null) {
                     points = resamplePoints(points, resolution);
@@ -413,8 +420,6 @@ public class TracksVerticle extends AbstractVerticle {
         double lastlat = 0.0;
         double lastlon = 0.0;
         double lastele = 0.0;
-        long mintime = Long.MAX_VALUE;
-        long maxtime = Long.MIN_VALUE;
         long lasttime = 0;
         double lastspeed = 0.0;
         double[] xvalues = new double[points.size()];
@@ -426,14 +431,8 @@ public class TracksVerticle extends AbstractVerticle {
             double lon = loc.getDouble(0);
             double ele = p.getDouble(ELE);
             long time = p.getLong(TIME);
-            if (time < mintime) {
-                mintime = time;
-            }
-            if (time > maxtime) {
-                maxtime = time;
-            }
-            
             double speed = 0.0;
+            
             if (i > 0) {
                 double dist = distance(lastlat, lastlon, lastele, lat, lon, ele); // in meters
                 totalDistance += dist;
@@ -456,20 +455,13 @@ public class TracksVerticle extends AbstractVerticle {
             lastspeed = speed;
         }
         
-        // calculate the average speed over 20 seconds
-        LinearInterpolator lp = new LinearInterpolator();
-        PolynomialSplineFunction spline = lp.interpolate(xvalues, yvalues);
-        for (int i = 0; i < points.size(); ++i) {
-            JsonObject p = points.getJsonObject(i);
+        // calculate moving average speed with a window size of 20 seconds
+        Averager averager = new Averager(20, 1000, xvalues, yvalues);
+        points.forEach(obj -> {
+            JsonObject p = (JsonObject)obj;
             long time = p.getLong(TIME);
-            final int N = 20;
-            double[] speeds = new double[N];
-            for (int j = 0; j < N; ++j) {
-                speeds[j] = spline.value(Math.min(Math.max(time - (j - N / 2) * 1000, mintime), maxtime));
-            }
-            double speed = DoubleStream.of(speeds).sum() / N;
-            p.put(SPEED, speed);
-        }
+            p.put(SPEED, averager.apply(time));
+        });
         
         return totalDistance;
     }

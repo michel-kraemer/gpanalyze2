@@ -7,6 +7,11 @@ button::-moz-focus-inner {
   border: none;
 }
 
+smsp {
+  display: inline-block;
+  width: 2px;
+}
+
 .md-button.md-fab md-icon {
   color: #666;
 }
@@ -34,6 +39,14 @@ button::-moz-focus-inner {
 .mdi {
   font-size: 24px;
   padding-top: 1px;
+}
+
+.rotate-left {
+  transform: rotate(-90deg);
+}
+
+.rotate-right {
+  transform: rotate(90deg);
 }
 
 #map {
@@ -169,4 +182,33 @@ button::-moz-focus-inner {
   cursor: default;
   border: none;
   outline: none;
+}
+
+#statistics-container {
+  width: 300px;
+  padding: 0 15px 0 15px;
+  font-size: 15px;
+  border-left: 1px solid rgba(0,0,0,0.12);
+  margin-left: 15px;
+}
+
+#statistics-container dt, #statistics-container dd {
+  display: inline-block;
+}
+
+#statistics-container dt {
+  width: 30px;
+  float: left;
+  line-height: 30px;
+}
+
+#statistics-container dd {
+  margin: 0 0 5px 0;
+  line-height: 33px;
+  float: left;
+  width: 100px;
+}
+
+#statistics-container dl.disabled, #statistics-container dl.disabled .mdi {
+  color: rgba(0,0,0,0.38);
 }

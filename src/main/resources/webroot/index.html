@@ -47,26 +47,44 @@
 
   <div layout="column" ng-controller="BottomBarCtrl" id="bottom-bar-container" ng-class="{'bottom-bar-visible': visible}">
     <div class="md-padding" layout="row" layout-align="end end" ng-class="{'bottom-bar-visible': visible}">
-      <md-button class="md-raised" id="expand-bottombar-button" ng-class="{'bottom-bar-visible': visible}" ng-click="toggle()">
+      <md-button class="md-raised" id="expand-bottombar-button" ng-class="{'bottom-bar-visible': visible}" ng-click="toggle()" aria-label="Expand bottom bar">
         <md-icon ng-hide="visible" class="mdi mdi-chevron-double-up"></md-icon>
         <md-icon ng-show="visible" class="mdi mdi-chevron-double-down"></md-icon>
       </md-button>
     </div>
-    <md-toolbar class="md-huge" id="bottom-bar" layout="column">
-      <div layout="row" layout-align="start end">
-        <h3 class="title" flex><time-range start-time="{{ startTimeLocal }}" end-time="{{ endTimeLocal }}"></time-range></h3>
-        <div id="graph_speed_toggle" layout="row">
-          <md-icon ng-class="{'md-accent': !displaySpeed}" ng-click="setDisplaySpeed(false)">terrain<md-tooltip>Elevation</md-tooltip></md-icon>
-          <md-switch ng-model="displaySpeed" aria-label="Switch between elevation profile and speed profile"></md-switch>
-          <md-icon ng-class="{'md-accent': displaySpeed}" ng-click="setDisplaySpeed(true)">directions_run<md-tooltip>Speed</md-tooltip></md-icon>
+    <md-toolbar class="md-huge" id="bottom-bar" layout="row">
+      <div flex layout="column">
+        <div layout="row" layout-align="start end">
+          <h3 class="title" flex><time-range start-time="{{ startTimeLocal }}" end-time="{{ endTimeLocal }}"></time-range></h3>
+          <div id="graph_speed_toggle" layout="row">
+            <md-icon class="mdi mdi-terrain" ng-class="{'md-accent': !displaySpeed}" ng-click="setDisplaySpeed(false)"><md-tooltip>Elevation</md-tooltip></md-icon>
+            <md-switch ng-model="displaySpeed" aria-label="Switch between elevation profile and speed profile"></md-switch>
+            <md-icon class="mdi mdi-speedometer" ng-class="{'md-accent': displaySpeed}" ng-click="setDisplaySpeed(true)"><md-tooltip>Speed</md-tooltip></md-icon>
+          </div>
+        </div>
+        <div class="col-md-12 height-100" id="graph-container" ng-controller="GraphCtrl" flex layout="row">
+          <canvas id="graph_canvas"></canvas>
+          <svg id="graph"></svg>
+          <div id="graph_hovermarker" ng-style="{top:tooltip.top,left:tooltip.left}" ng-show="tooltip.show">
+            <div class="graph-tooltip" ng-bind-html="tooltip.content"></div>
+          </div>
         </div>
       </div>
-      <div class="col-md-12 height-100" id="graph-container" ng-controller="GraphCtrl" flex layout="row">
-        <canvas id="graph_canvas"></canvas>
-        <svg id="graph"></svg>
-        <div id="graph_hovermarker" ng-style="{top:tooltip.top,left:tooltip.left}" ng-show="tooltip.show">
-          <div class="graph-tooltip" ng-bind-html="tooltip.content"></div>
-        </div>
+      <div id="statistics-container" ng-controller="StatisticsCtrl">
+        <dl ng-class="{disabled: redrawing}">
+          <dt><md-icon class="mdi mdi-timer"><md-tooltip>Elapsed time</md-tooltip></md-icon></dt>
+            <dd>{{ time_hours }}<smsp></smsp>h<span ng-show="time_minutes">&nbsp;<smsp></smsp><smsp></smsp>{{ time_minutes }}<smsp></smsp>m</span></dd>
+          <dt><md-icon class="mdi mdi-keyboard-tab"><md-tooltip>Distance</md-tooltip></md-icon></dt>
+            <dd>{{ distance | number:2 }}<smsp></smsp>km</dd>
+          <dt><md-icon class="mdi mdi-elevation-rise"><md-tooltip>Elevation gain</md-tooltip></md-icon></dt>
+            <dd>{{ elevation_gain | number:0 }}<smsp></smsp>m</dd>
+          <dt><md-icon class="mdi mdi-elevation-decline"><md-tooltip>Elevation loss</md-tooltip></md-icon></dt>
+            <dd>{{ elevation_loss | number:0 }}<smsp></smsp>m</dd>
+          <dt><md-icon class="mdi mdi-skip-next rotate-left"><md-tooltip>Highest point</md-tooltip></md-icon></dt>
+            <dd>{{ elevation_max | number:0 }}<smsp></smsp>m</dd>
+          <dt><md-icon class="mdi mdi-skip-next rotate-right"><md-tooltip>Lowest point</md-tooltip></md-icon></dt>
+            <dd>{{ elevation_min | number:0 }}<smsp></smsp>m</dd>
+        </dl>
       </div>
     </md-toolbar>
   </div>
@@ -93,6 +111,7 @@
 <script src="main.js"></script>
 <script src="map.js"></script>
 <script src="selectionservice.js"></script>
+<script src="statistics.js"></script>
 <script src="timerange.js"></script>
 <script src="trackservice.js"></script>
 

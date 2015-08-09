@@ -190,6 +190,20 @@ public class TrackDao {
     }
     
     /**
+     * Retrieves multiple tracks from the database
+     * @param trackIds the track ids
+     * @return an observable emitting the tracks
+     */
+    public Observable<List<JsonObject>> getTracks(List<String> trackIds) {
+        JsonArray tidarr = new JsonArray(trackIds);
+        JsonObject query = new JsonObject().put(OBJECT_ID,
+                new JsonObject().put("$in", tidarr));
+        ObservableFuture<List<JsonObject>> f = RxHelper.observableFuture();
+        client.find(TRACKS_COLLECTION, query, f.toHandler());
+        return f;
+    }
+    
+    /**
      * Retrieves a track from the database but does not load its points
      * @param trackId the track's id
      * @return an observable emitting the track

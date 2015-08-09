@@ -1,4 +1,4 @@
-angular.module("GPAnalyzeApp", ["ngMaterial", "map", "importDialog", "bottombar", "graph"])
+angular.module("GPAnalyzeApp", ["ngMaterial", "map", "importDialog", "bottombar", "graph", "statistics"])
 
 .controller("MainMenuCtrl", function($scope, $mdDialog, ImportDialogCtrl) {
   // show import dialog
