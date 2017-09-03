@@ -2,7 +2,6 @@ package de.undercouch.gpanalyze2;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
-import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
@@ -17,11 +16,6 @@ import io.vertx.rx.java.RxHelper;
 
 public class Main extends AbstractVerticle {
     private static final Logger log = LoggerFactory.getLogger(Main.class.getName());
-    
-    public static void main(String[] args) {
-        Vertx vertx = Vertx.vertx();
-        vertx.deployVerticle(Main.class.getName());
-    }
     
     @Override
     public void start(Future<Void> startFuture) {

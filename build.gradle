@@ -1,8 +1,20 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'net.alchim31:livereload-jvm:0.2.0'
+    }
+}
+
 apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: 'eclipse'
 
-mainClassName = 'de.undercouch.gpanalyze2.Main'
+import java.nio.file.FileSystems
+import net_alchim31_livereload.LRServer
+
+mainClassName = 'io.vertx.core.Launcher'
 
 repositories {
     jcenter()
@@ -45,3 +57,16 @@ dependencies {
 task wrapper(type: Wrapper) {
     gradleVersion = '4.1'
 }
+
+run {
+    args = ['run', 'de.undercouch.gpanalyze2.Main', "--redeploy=src/**/*",
+        "--launcher-class=$mainClassName", "--on-redeploy=./gradlew build"]
+}
+
+task runLiveReloadServer {
+    doLast {
+        new LRServer(35729, FileSystems.getDefault().getPath("build/resources/main/webroot")).start();
+    }
+}
+
+run.dependsOn(runLiveReloadServer)
