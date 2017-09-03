@@ -1,8 +1,7 @@
-angular.module("map", ["trackservice", "selectionservice"])
+angular.module("map", ["trackservice", "selectionservice", "stateservice"])
 
-.controller("MapCtrl", function($scope, $timeout, TrackService, SelectionService) {
+.controller("MapCtrl", function($scope, $timeout, TrackService, SelectionService, StateService) {
   var trackPolylines = {};
-  var doUpdateState = true;
   var hoverCircle;
   
   // initialize map
@@ -11,30 +10,18 @@ angular.module("map", ["trackservice", "selectionservice"])
     attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
     minZoom: 3
   }).addTo(map);
-  
-  var loadState = function(state) {
-    if (state) {
-      map.setView(state.center, state.zoom);
+
+  StateService.addChangeListener(function(state) {
+    if (state.lat) {
+      var center = L.latLng(state.lat, state.lng);
+      map.setView(center, state.zoom);
     } else {
-      var re = /@([0-9.]+),([0-9.]+),([0-9]+)/;
-      var match = re.exec(location.hash);
-      if (match) {
-        map.setView(L.latLng(match[1], match[2]), match[3]);
-      } else {
-        // move to current position (but keep min zoom level)
-        map.locate({
-          setView: true,
-          maxZoom: 3
-        });
-      }
+      // move to current position (but keep min zoom level)
+      map.locate({
+        setView: true,
+        maxZoom: 3
+      });
     }
-  };
-  loadState(history.state);
-  
-  $(window).bind("popstate", function(e) {
-    var s = e.originalEvent.state;
-    doUpdateState = false;
-    loadState(s);
   });
   
   // handle zoom buttons
@@ -55,32 +42,12 @@ angular.module("map", ["trackservice", "selectionservice"])
     $scope.zoomOutDisabled = map.getZoom() == map.getMinZoom();
   };
   
-  var makeQueryString = function() {
-    var qs = "@" + map.getCenter().lat + "," + map.getCenter().lng + "," + map.getZoom();
-    var result;
-    var re = /(.*?)@[^\/]+(.*)/;
-    var match = re.exec(location.hash);
-    if (match) {
-      result = match[1] + qs + match[2];
-    } else {
-      result = location.pathname;
-      if (result[result.length - 1] != "/") {
-        result = result + "/";
-      }
-      result += qs;
-    }
-    if (result[0] != '#') {
-      result = "#" + result;
-    }
-    return result;
-  };
-  
   var updateState = function() {
-    if (doUpdateState) {
-      history.pushState({zoom: map.getZoom(), center: map.getCenter()}, "", makeQueryString());
-    } else {
-      doUpdateState = true;
-    }
+    StateService.pushState({
+      zoom: map.getZoom(),
+      lat: map.getCenter().lat,
+      lng: map.getCenter().lng
+    });
   };
   
   var updateSelection = function() {
