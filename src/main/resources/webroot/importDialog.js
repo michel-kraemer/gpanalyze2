@@ -104,10 +104,14 @@ angular.module("importDialog", ["ngMaterial", "ngFileUpload", "eventbus", "track
       // create new track on server
       EventBus.send("tracks", {
         "action": "addTrack"
-      }, function(reply) {
+      }, function(err, reply) {
+        if (err) {
+          callback(err);
+          return;
+        }
         // add points to new track (max. n points per message to avoid
         // exceeding maximum WebSocket frame size)
-        var trackId = reply.trackId;
+        var trackId = reply.body.trackId;
         var doAddPoints = function(i, n) {
           if (i >= track.points.length) {
             callback(null, trackId);
@@ -130,8 +134,6 @@ angular.module("importDialog", ["ngMaterial", "ngFileUpload", "eventbus", "track
           });
         };
         doAddPoints(0, findBestWebsocketFrameSize(track, 0, track.points.length));
-      }, function(err) {
-        callback(err);
       });
     };
     
@@ -141,10 +143,12 @@ angular.module("importDialog", ["ngMaterial", "ngFileUpload", "eventbus", "track
         "action": "addPoints",
         "trackId": trackId,
         "points": ps
-      }, function(reply) {
-        callback(null);
-      }, function(err) {
-        callback(err);
+      }, function(err, reply) {
+        if (err) {
+          callback(err);
+        } else {
+          callback(null);
+        }
       })
     };
     

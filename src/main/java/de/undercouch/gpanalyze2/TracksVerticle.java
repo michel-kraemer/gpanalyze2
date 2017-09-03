@@ -239,7 +239,9 @@ public class TracksVerticle extends AbstractVerticle {
     private Observable<Pair<String, Integer>> getTimeZone(JsonObject point) {
         JsonArray loc = point.getJsonArray(LOC);
         LatLng location = new LatLng(loc.getDouble(1), loc.getDouble(0));
-        GeoApiContext context = new GeoApiContext().setApiKey(GOOGLE_APIS_KEY);
+        GeoApiContext context = new GeoApiContext.Builder()
+            .apiKey(GOOGLE_APIS_KEY)
+            .build();
         PendingResult<TimeZone> req = TimeZoneApi.getTimeZone(context, location);
         ObservableFuture<Pair<String, Integer>> f = RxHelper.observableFuture();
         Handler<AsyncResult<Pair<String, Integer>>> h = f.toHandler();

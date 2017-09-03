@@ -35,30 +35,33 @@ angular.module("statistics", ["ngMaterial", "selectionservice", "trackservice", 
       trackIds: Object.keys(tracks),
       startTimeLocal: SelectionService.getStartTimeLocal(),
       endTimeLocal: SelectionService.getEndTimeLocal()
-    }, function(stats) {
-      $timeout(function() {
+    }, function(err, reply) {
+      if (err) {
         $scope.redrawing = false;
-        if (scheduleRedraw) {
-          scheduleRedraw = false;
-          redraw();
-        } else {
-          $scope.time_hours = Math.floor(stats.time / 1000 / 60 / 60);
-          $scope.time_minutes = Math.floor(stats.time / 1000 / 60) % 60;
-          $scope.distance = stats.distance;
-          $scope.elevation_gain = stats.elevationGain;
-          $scope.elevation_loss = stats.elevationLoss;
-          $scope.elevation_max = stats.elevationMax || "";
-          $scope.elevation_min = stats.elevationMin || "";
-        }
-      }, 0);
-    }, function(err) {
-      $scope.redrawing = false;
-      scheduleRedraw = false;
-      $mdDialog.show($mdDialog.alert()
+        scheduleRedraw = false;
+        $mdDialog.show($mdDialog.alert()
           .parent(angular.element(document.body))
           .title("Error")
           .content("Could not calculate statistics. " + err.message)
           .ok("OK"));
+      } else {
+        var stats = reply.body;
+        $timeout(function() {
+          $scope.redrawing = false;
+          if (scheduleRedraw) {
+            scheduleRedraw = false;
+            redraw();
+          } else {
+            $scope.time_hours = Math.floor(stats.time / 1000 / 60 / 60);
+            $scope.time_minutes = Math.floor(stats.time / 1000 / 60) % 60;
+            $scope.distance = stats.distance;
+            $scope.elevation_gain = stats.elevationGain;
+            $scope.elevation_loss = stats.elevationLoss;
+            $scope.elevation_max = stats.elevationMax || "";
+            $scope.elevation_min = stats.elevationMin || "";
+          }
+        }, 0);
+      }
     });
   };
   

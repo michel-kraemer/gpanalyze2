@@ -7,7 +7,7 @@ angular.module("eventbus", [])
   var openListeners = [];
   
   var connect = function() {
-    eb = new vertx.EventBus("http://localhost:8080/eventbus");
+    eb = new EventBus("http://localhost:8080/eventbus");
     initialOpenHandled = false;
     eb.onopen = function() {
       if (!initialOpenHandled) {
@@ -23,9 +23,9 @@ angular.module("eventbus", [])
   
   var reconnect = function(done) {
     var retry = function() {
-      if (eb.readyState() === vertx.EventBus.OPEN) {
+      if (eb.state === EventBus.OPEN) {
         done();
-      } else if (eb.readyState() === vertx.EventBus.CONNECTING) {
+      } else if (eb.state === EventBus.CONNECTING) {
         setTimeout(function() {
           retry()
         }, 1000);
@@ -41,7 +41,7 @@ angular.module("eventbus", [])
   };
   
   return {
-    send: function(address, message, headers, replyHandler, failureHandler) {
+    send: function(address, message, headers, handler) {
       var a = arguments;
       reconnect(function() {
         eb.send.apply(eb, a);
@@ -69,7 +69,7 @@ angular.module("eventbus", [])
     
     addOpenListener: function(listener) {
       reconnect(function() {});
-      if (eb.readyState() === vertx.EventBus.OPEN && initialOpenHandled) {
+      if (eb.state === EventBus.OPEN && initialOpenHandled) {
         listener();
       } else {
         openListeners.push(listener);

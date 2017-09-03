@@ -49,19 +49,22 @@ angular.module("trackservice", ["ngMaterial", "eventbus", "selectionservice"])
       action: "getTrack",
       trackId: trackInfo.trackId,
       resolution: trackInfo.resolution
-    }, function(track) {
-      // call updateOrAddTrack() asynchronously so we can start
-      // loading the next track already
-      $timeout(function() {
-        updateOrAddTrack(track);
-      }, 0);
-      loadTracks(tracks.slice(1));
-    }, function(err) {
-      $mdDialog.show($mdDialog.alert()
-          .parent(angular.element(document.body))
-          .title("Error")
-          .content("Could not load track with id " + trackInfo.trackId + ". " + err.message)
-          .ok("OK"));
+    }, function(err, reply) {
+      if (err) {
+        $mdDialog.show($mdDialog.alert()
+        .parent(angular.element(document.body))
+        .title("Error")
+        .content("Could not load track with id " + trackInfo.trackId + ". " + err.message)
+        .ok("OK"));
+      } else {
+        // call updateOrAddTrack() asynchronously so we can start
+        // loading the next track already
+        var track = reply.body;
+        $timeout(function() {
+          updateOrAddTrack(track);
+        }, 0);
+        loadTracks(tracks.slice(1));
+      }
     });
   };
   
@@ -100,15 +103,18 @@ angular.module("trackservice", ["ngMaterial", "eventbus", "selectionservice"])
       bounds: bounds,
       startTimeLocal: SelectionService.getStartTimeLocal(),
       endTimeLocal: SelectionService.getEndTimeLocal()
-    }, function(tracks) {
-      retainTracks(tracks);
-      loadTracks(tracks);
-    }, function(err) {
-      $mdDialog.show($mdDialog.alert()
+    }, function(err, reply) {
+      if (err) {
+        $mdDialog.show($mdDialog.alert()
           .parent(angular.element(document.body))
           .title("Error")
           .content("Could not load tracks. " + err.message)
           .ok("OK"));
+      } else {
+        var tracks = reply.body;
+        retainTracks(tracks);
+        loadTracks(tracks);
+      }
     });
   };
   
