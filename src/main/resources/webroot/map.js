@@ -2,6 +2,7 @@ angular.module("map", ["trackservice", "selectionservice", "stateservice"])
 
 .controller("MapCtrl", function($scope, $timeout, TrackService, SelectionService, StateService) {
   var trackPolylines = {};
+  var doUpdateState = true;
   var hoverCircle;
   
   // initialize map
@@ -12,6 +13,7 @@ angular.module("map", ["trackservice", "selectionservice", "stateservice"])
   }).addTo(map);
 
   StateService.addChangeListener(function(state) {
+    doUpdateState = false;
     if (state.lat) {
       var center = L.latLng(state.lat, state.lng);
       map.setView(center, state.zoom);
@@ -43,11 +45,15 @@ angular.module("map", ["trackservice", "selectionservice", "stateservice"])
   };
   
   var updateState = function() {
-    StateService.pushState({
-      zoom: map.getZoom(),
-      lat: map.getCenter().lat,
-      lng: map.getCenter().lng
-    });
+    if (doUpdateState) {
+      StateService.pushState({
+        zoom: map.getZoom(),
+        lat: map.getCenter().lat,
+        lng: map.getCenter().lng
+      });
+    } else {
+      doUpdateState = true;
+    }
   };
   
   var updateSelection = function() {
