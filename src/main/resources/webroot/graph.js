@@ -11,6 +11,7 @@ angular.module("graph", ["trackservice", "selectionservice", "ngSanitize"])
   var redrawTimer;
   var tooltipTimer;
   var displaySpeed = false;
+  var doUpdateZoom = true;
   
   var graph = $("#graph");
   var canvas = $("#graph_canvas");
@@ -59,8 +60,8 @@ angular.module("graph", ["trackservice", "selectionservice", "ngSanitize"])
     .orient("left");
   
   // the current view of the x scale (in milliseconds sind epoch)
-  xScale.domain([+new Date("2013-01-01"), +new Date()]);
-  
+  xScale.domain([SelectionService.getStartTimeLocal(), SelectionService.getEndTimeLocal()]);
+
   // the current view of the y scale (in meters)
   var updateYScaleDomain = function() {
     if (displaySpeed) {
@@ -72,7 +73,7 @@ angular.module("graph", ["trackservice", "selectionservice", "ngSanitize"])
   updateYScaleDomain();
   
   // add x and y axis to graph
-  graph.append("g")
+  var xAxisElement = graph.append("g")
     .attr("class", "x axis")
     .attr("transform", "translate(0," + height + ")")
     .call(xAxis);
@@ -84,13 +85,10 @@ angular.module("graph", ["trackservice", "selectionservice", "ngSanitize"])
   var zoom = d3.behavior.zoom()
     .x(xScale)
     .on("zoom", function() {
-      // on zoom redraw x axis and then redraw graph
-      graph.select('.x.axis').call(xAxis);
-      redrawGraph();
-      
       // notify selection service
       var startTimeLocal = +xScale.invert(0);
       var endTimeLocal = +xScale.invert(width);
+      doUpdateZoom = false;
       SelectionService.setTimeLocal(startTimeLocal, endTimeLocal);
     });
   
@@ -272,6 +270,17 @@ angular.module("graph", ["trackservice", "selectionservice", "ngSanitize"])
   });
   
   SelectionService.addListener({
+    onSetTimeLocal: function(startTimeLocal, endTimeLocal) {
+      xScale.domain([startTimeLocal, endTimeLocal]);
+      if (doUpdateZoom) {
+        zoom.x(xScale);
+      } else {
+        doUpdateZoom = true;
+      }
+      xAxisElement.call(xAxis);
+      redrawGraph();
+    },
+
     onSetHoverTimeLocal: function(hoverTimeLocal) {
       redrawGraph();
       $timeout(function() {

@@ -12,7 +12,7 @@ angular.module("map", ["trackservice", "selectionservice", "stateservice"])
     minZoom: 3
   }).addTo(map);
 
-  StateService.addChangeListener(function(state) {
+  StateService.addChangeListener(undefined, function(state) {
     doUpdateState = false;
     if (state.lat) {
       var center = L.latLng(state.lat, state.lng);

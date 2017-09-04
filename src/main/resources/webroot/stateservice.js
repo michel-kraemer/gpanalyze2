@@ -4,12 +4,16 @@ angular.module("stateservice", [])
   var state = {
     lat: undefined,
     lng: undefined,
-    zoom: 3
+    zoom: 3,
+    startTimeLocal: undefined,
+    endTimeLocal: undefined
   };
   var listeners = [];
 
   var makeQueryString = function() {
-    var qs = "@" + state.lat + "," + state.lng + "," + state.zoom;
+    var qs = "@" + state.lat + "," + state.lng + "," + state.zoom + "@" +
+      (+state.bottomBarVisible) + "," + (+state.displaySpeed) + "," +
+      state.startTimeLocal + "," + state.endTimeLocal;
     var result;
     var re = /(.*?)@[^\/]+(.*)/;
     var match = re.exec(location.hash);
@@ -32,12 +36,16 @@ angular.module("stateservice", [])
     if (s) {
       state = s;
     } else {
-      var re = /@([0-9.]+),([0-9.]+),([0-9]+)/;
+      var re = /@([0-9.]+),([0-9.]+),([0-9]+)@([0-9]+),([0-9]+),([0-9]+),([0-9]+)/;
       var match = re.exec(location.hash);
       if (match) {
         state.lat = match[1];
         state.lng = match[2];
         state.zoom = match[3];
+        state.bottomBarVisible = !!parseInt(match[4]);
+        state.displaySpeed = !!parseInt(match[5]);
+        state.startTimeLocal = parseInt(match[6]);
+        state.endTimeLocal = parseInt(match[7]);
       }
     }
     if (listener) {
@@ -69,7 +77,14 @@ angular.module("stateservice", [])
       }
     },
 
-    addChangeListener: function(listener) {
+    addChangeListener: function(initialState, listener) {
+      if (initialState) {
+        Object.keys(initialState).forEach(function(k) {
+          if (typeof state[k] === "undefined") {
+            state[k] = initialState[k];
+          }
+        });
+      }
       listeners.push(listener);
       loadState(history.state, listener);
     }
