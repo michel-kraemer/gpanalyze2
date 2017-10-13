@@ -5,6 +5,8 @@ angular.module("trackservice", ["ngMaterial", "eventbus", "selectionservice"])
   
   var openTracks = [];
   var trackListeners = [];
+
+  var currentLoadTracksContext = {};
   
   var findTrack = function(trackId) {
     for (var i = 0; i < openTracks.length; ++i) {
@@ -32,8 +34,8 @@ angular.module("trackservice", ["ngMaterial", "eventbus", "selectionservice"])
     }
   };
   
-  var loadTracks = function(tracks) {
-    if (tracks.length == 0) {
+  var loadTracksInternal = function(tracks, context) {
+    if (context.abort || tracks.length == 0) {
       return;
     }
     
@@ -41,7 +43,7 @@ angular.module("trackservice", ["ngMaterial", "eventbus", "selectionservice"])
     var oldTrackPos = findTrack(trackInfo.trackId);
     if (oldTrackPos >= 0 && openTracks[oldTrackPos].resolution == trackInfo.resolution) {
       // we don't have to update the track. continue with the next one.
-      loadTracks(tracks.slice(1));
+      loadTracksInternal(tracks.slice(1), context);
       return;
     }
     
@@ -63,9 +65,15 @@ angular.module("trackservice", ["ngMaterial", "eventbus", "selectionservice"])
         $timeout(function() {
           updateOrAddTrack(track);
         }, 0);
-        loadTracks(tracks.slice(1));
+        loadTracksInternal(tracks.slice(1), context);
       }
     });
+  };
+
+  var loadTracks = function(tracks) {
+    currentLoadTracksContext.abort = true;
+    currentLoadTracksContext = {};
+    loadTracksInternal(tracks, currentLoadTracksContext);
   };
   
   var retainTracks = function(tracksToRetain) {
