@@ -98,6 +98,19 @@ angular.module("trackservice", ["ngMaterial", "eventbus", "selectionservice"])
     });
     openTracks = newOpenTracks;
   };
+
+  var prioritizeTracks = function(tracks) {
+    tracks.sort(function(a, b) {
+      var trackOpenA = findTrack(a.trackId) >= 0;
+      var trackOpenB = findTrack(b.trackId) >= 0;
+      if (trackOpenA && !trackOpenB) {
+        return 1;
+      } else if (trackOpenB && !trackOpenA) {
+        return -1;
+      }
+      return a.startTimeLocal - b.startTimeLocal;
+    });
+  };
   
   var loadAllTracks = function() {
     var bounds = SelectionService.getBounds();
@@ -121,6 +134,7 @@ angular.module("trackservice", ["ngMaterial", "eventbus", "selectionservice"])
       } else {
         var tracks = reply.body;
         retainTracks(tracks);
+        prioritizeTracks(tracks);
         loadTracks(tracks);
       }
     });
