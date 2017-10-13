@@ -142,16 +142,16 @@ angular.module("trackservice", ["ngMaterial", "eventbus", "selectionservice"])
   
   // initially load all tracks
   EventBus.addOpenListener(function() {
-    startResetTracksTimer();
+    startResetTracksTimer(true);
   });
   
-  var startResetTracksTimer = function() {
+  var startResetTracksTimer = function(quick) {
     if (resetTracksTimer) {
       $timeout.cancel(resetTracksTimer);
     }
     resetTracksTimer = $timeout(function() {
       loadAllTracks();
-    }, 500);
+    }, quick ? 0 : 500);
   };
   
   SelectionService.addListener({
