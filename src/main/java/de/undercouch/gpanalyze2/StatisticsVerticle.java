@@ -182,7 +182,7 @@ public class StatisticsVerticle extends AbstractVerticle {
             prevp = p;
         }
         
-        if (last != first && first < points.size()) {
+        if (last != first && first < points.size() && xvalues.size() > 1 && yvalues.size() > 1) {
             // calculate moving average for elevation values (window size = 120s)
             Averager averager = new Averager(120, 1000,
                     xvalues.stream().mapToDouble(d -> d).toArray(),
