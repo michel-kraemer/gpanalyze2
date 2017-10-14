@@ -4,5 +4,6 @@
 .vertx/
 bin/
 build/
+map_tile_cache/
 .classpath
 .project

@@ -13,4 +13,4 @@ jcs.default.elementattributes.IsLateral=true
 
 jcs.auxiliary.DC=org.apache.commons.jcs.auxiliary.disk.indexed.IndexedDiskCacheFactory
 jcs.auxiliary.DC.attributes=org.apache.commons.jcs.auxiliary.disk.indexed.IndexedDiskCacheAttributes
-jcs.auxiliary.DC.attributes.DiskPath=C:/Temp/gpanalyze2_cache
+jcs.auxiliary.DC.attributes.DiskPath=map_tile_cache
