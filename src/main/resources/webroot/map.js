@@ -37,7 +37,21 @@ angular.module("map", ["trackservice", "selectionservice", "stateservice"])
   $scope.zoomOut = function() {
     map.zoomOut();
   };
-  
+
+  var needsFixLng = function(lng) {
+    return (lng < -180 || lng > 180);
+  }
+
+  var fixLng = function(lng) {
+    while (lng < -180) {
+      lng += 360;
+    }
+    while (lng > 180) {
+      lng -= 360;
+    }
+    return lng;
+  };
+
   var updateZoomDisabled = function() {
     // disable zoom buttons if necessary
     $scope.zoomInDisabled = map.getZoom() == map.getMaxZoom();
@@ -46,10 +60,16 @@ angular.module("map", ["trackservice", "selectionservice", "stateservice"])
   
   var updateState = function() {
     if (doUpdateState) {
+      var lat = map.getCenter().lat;
+      var lng = map.getCenter().lng;
+      if (needsFixLng(lng)) {
+        lng = fixLng(lng);
+        map.setView(L.latLng(lat, lng), map.getZoom());
+      }
       StateService.pushState({
         zoom: map.getZoom(),
-        lat: map.getCenter().lat,
-        lng: map.getCenter().lng
+        lat: lat,
+        lng: lng
       });
     } else {
       doUpdateState = true;
