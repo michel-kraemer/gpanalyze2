@@ -5,6 +5,7 @@ import static de.undercouch.gpanalyze2.TrackConstants.ELE;
 import static de.undercouch.gpanalyze2.TrackConstants.END_TIME;
 import static de.undercouch.gpanalyze2.TrackConstants.END_TIME_LOCAL;
 import static de.undercouch.gpanalyze2.TrackConstants.LOC;
+import static de.undercouch.gpanalyze2.TrackConstants.NAME;
 import static de.undercouch.gpanalyze2.TrackConstants.OBJECT_ID;
 import static de.undercouch.gpanalyze2.TrackConstants.POINTS;
 import static de.undercouch.gpanalyze2.TrackConstants.SPEED;
@@ -116,7 +117,8 @@ public class TracksVerticle extends AbstractVerticle {
     }
 
     private void onAddTrack(Message<JsonObject> msg) {
-        trackDao.createEmptyTrack().subscribe(id -> {
+        String name = msg.body().getString(NAME);
+        trackDao.createEmptyTrack(name).subscribe(id -> {
             msg.reply(new JsonObject().put(TRACK_ID, id));
             log.info("Added track " + id);
         }, err -> {

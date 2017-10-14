@@ -7,7 +7,8 @@ public final class TrackConstants {
     
     public static final String OBJECT_ID = "_id";
     public static final String TRACK_ID = "trackId";
-    
+    public static final String NAME = "name";
+
     public static final String START_TIME = "startTime";
     public static final String END_TIME = "endTime";
     public static final String START_TIME_LOCAL = "startTimeLocal";

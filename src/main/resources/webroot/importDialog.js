@@ -13,12 +13,17 @@ angular.module("importDialog", ["ngMaterial", "ngFileUpload", "eventbus", "track
     $scope.ok = function() {
       $scope.importing = true;
       $scope.progress = 0;
+      var file = $scope.files[0];
+      var name = file.name;
+      if (name.toLowerCase().endsWith(".gpx")) {
+        name = name.substr(0, name.length - 4);
+      }
       var fr = new FileReader();
       fr.onload = function(e) {
         var xmlstr = e.target.result;
         loadRawTracksFromFile(xmlstr, function(track) {
           // TODO support more than one track per file
-          importTrack(track[0], function(err, trackId) {
+          importTrack(track[0], name, function(err, trackId) {
             if (err) {
               $mdDialog.show($mdDialog.alert()
                   .parent(angular.element(document.body))
@@ -32,7 +37,7 @@ angular.module("importDialog", ["ngMaterial", "ngFileUpload", "eventbus", "track
           });
         });
       };
-      fr.readAsText($scope.files[0]);
+      fr.readAsText(file);
     };
     
     $scope.onSelect = function(files) {
@@ -100,10 +105,11 @@ angular.module("importDialog", ["ngMaterial", "ngFileUpload", "eventbus", "track
       return result;
     }
     
-    var importTrack = function(track, callback) {
+    var importTrack = function(track, name, callback) {
       // create new track on server
       EventBus.send("tracks", {
-        "action": "addTrack"
+        "action": "addTrack",
+        "name": name
       }, function(err, reply) {
         if (err) {
           callback(err);

@@ -3,6 +3,7 @@ package de.undercouch.gpanalyze2;
 import static de.undercouch.gpanalyze2.TrackConstants.END_TIME;
 import static de.undercouch.gpanalyze2.TrackConstants.END_TIME_LOCAL;
 import static de.undercouch.gpanalyze2.TrackConstants.LOC;
+import static de.undercouch.gpanalyze2.TrackConstants.NAME;
 import static de.undercouch.gpanalyze2.TrackConstants.OBJECT_ID;
 import static de.undercouch.gpanalyze2.TrackConstants.POINTS;
 import static de.undercouch.gpanalyze2.TrackConstants.START_TIME;
@@ -36,11 +37,15 @@ public class TrackDao {
     
     /**
      * Creates a new empty track in the database
+     * @param name the track's name
      * @return an observable emitting the new track's id
      */
-    public Observable<String> createEmptyTrack() {
+    public Observable<String> createEmptyTrack(String name) {
         ObservableFuture<String> f = RxHelper.observableFuture();
-        JsonObject newTrack = new JsonObject();
+        if (name == null) {
+            name = "<unnamed>";
+        }
+        JsonObject newTrack = new JsonObject().put(NAME, name);
         client.insert(TRACKS_COLLECTION, newTrack, f.toHandler());
         return f;
     }
