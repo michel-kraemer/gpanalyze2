@@ -67,7 +67,7 @@ angular.module("graph", ["trackservice", "selectionservice", "ngSanitize"])
     if (displaySpeed) {
       yScale.domain([0, 200]);
     } else {
-      yScale.domain([-100, 1600]);
+      yScale.domain([-100, 2400]);
     }
   };
   updateYScaleDomain();
